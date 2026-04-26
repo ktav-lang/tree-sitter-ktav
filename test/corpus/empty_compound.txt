@@ -1,0 +1,47 @@
+==================
+Empty inline compounds
+==================
+meta: {}
+tags: []
+estr: ()
+estr2: (())
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_object))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_array))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_paren))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_double_paren)))
+
+==================
+Empty multiline compound
+==================
+empty_obj: {
+}
+empty_arr: [
+]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_array)))

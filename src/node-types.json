@@ -1,0 +1,403 @@
+[
+  {
+    "type": "array_item",
+    "named": true,
+    "fields": {
+      "marker": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "sep_float",
+            "named": true
+          },
+          {
+            "type": "sep_int",
+            "named": true
+          },
+          {
+            "type": "sep_raw",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_array",
+            "named": true
+          },
+          {
+            "type": "compound_object",
+            "named": true
+          },
+          {
+            "type": "empty_array",
+            "named": true
+          },
+          {
+            "type": "empty_double_paren",
+            "named": true
+          },
+          {
+            "type": "empty_object",
+            "named": true
+          },
+          {
+            "type": "empty_paren",
+            "named": true
+          },
+          {
+            "type": "empty_value",
+            "named": true
+          },
+          {
+            "type": "keyword",
+            "named": true
+          },
+          {
+            "type": "multiline_stripped",
+            "named": true
+          },
+          {
+            "type": "multiline_verbatim",
+            "named": true
+          },
+          {
+            "type": "scalar",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "blank_line",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "comment",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "compound_array",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "array_item",
+          "named": true
+        },
+        {
+          "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "comment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "compound_object",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "comment",
+          "named": true
+        },
+        {
+          "type": "object_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "dotted_key",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "empty_array",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "empty_double_paren",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "empty_object",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "empty_paren",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "empty_value",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "key",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "dotted_key",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "keyword",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_false",
+          "named": true
+        },
+        {
+          "type": "kw_null",
+          "named": true
+        },
+        {
+          "type": "kw_true",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "multiline_stripped",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "multiline_content_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "multiline_verbatim",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "multiline_content_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "object_pair",
+    "named": true,
+    "fields": {
+      "key": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "key",
+            "named": true
+          }
+        ]
+      },
+      "separator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "sep_float",
+            "named": true
+          },
+          {
+            "type": "sep_int",
+            "named": true
+          },
+          {
+            "type": "sep_raw",
+            "named": true
+          },
+          {
+            "type": "sep_string",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_array",
+            "named": true
+          },
+          {
+            "type": "compound_object",
+            "named": true
+          },
+          {
+            "type": "empty_array",
+            "named": true
+          },
+          {
+            "type": "empty_double_paren",
+            "named": true
+          },
+          {
+            "type": "empty_object",
+            "named": true
+          },
+          {
+            "type": "empty_paren",
+            "named": true
+          },
+          {
+            "type": "empty_value",
+            "named": true
+          },
+          {
+            "type": "keyword",
+            "named": true
+          },
+          {
+            "type": "multiline_stripped",
+            "named": true
+          },
+          {
+            "type": "multiline_verbatim",
+            "named": true
+          },
+          {
+            "type": "scalar",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "scalar",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "comment",
+          "named": true
+        },
+        {
+          "type": "object_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "#",
+    "named": false
+  },
+  {
+    "type": "(())",
+    "named": false
+  },
+  {
+    "type": "()",
+    "named": false
+  },
+  {
+    "type": ".",
+    "named": false
+  },
+  {
+    "type": "[]",
+    "named": false
+  },
+  {
+    "type": "kw_false",
+    "named": true
+  },
+  {
+    "type": "kw_null",
+    "named": true
+  },
+  {
+    "type": "kw_true",
+    "named": true
+  },
+  {
+    "type": "multiline_content_line",
+    "named": true
+  },
+  {
+    "type": "sep_float",
+    "named": true
+  },
+  {
+    "type": "sep_int",
+    "named": true
+  },
+  {
+    "type": "sep_raw",
+    "named": true
+  },
+  {
+    "type": "sep_string",
+    "named": true
+  },
+  {
+    "type": "{}",
+    "named": false
+  }
+]

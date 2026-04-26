@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tree-sitter test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli@^0.24
+
+      - name: Generate parser
+        run: tree-sitter generate
+
+      - name: Verify generated parser is committed (no diff)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          if ! git diff --quiet src/; then
+            echo "::error::Generated parser differs from committed src/. Run 'tree-sitter generate' and commit the result."
+            git diff --stat src/
+            exit 1
+          fi
+
+      - name: Run corpus tests
+        run: tree-sitter test
+
+  rust:
+    name: cargo build / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo build
+        run: cargo build --verbose
+      - name: cargo test
+        run: cargo test --verbose
+
+  node:
+    name: node-gyp build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node -e "require('./bindings/node')"

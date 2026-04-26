@@ -1,0 +1,40 @@
+==================
+Simple key value pairs
+==================
+name: Russia
+port: 20082
+path: /etc/hosts
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+Empty values
+==================
+empty:
+nothing:
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_value))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_value)))

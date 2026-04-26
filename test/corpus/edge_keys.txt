@@ -1,0 +1,61 @@
+==================
+Keys with allowed special characters
+==================
+my-key: dash
+my_key: underscore
+my+key: plus
+key/path: slash
+v1.0: version-like
+unicode-ключ: hi
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+Values with colons stay scalar
+==================
+addr: example.com:8080
+url: http://example.com/path
+ratio: 1:2:3
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))

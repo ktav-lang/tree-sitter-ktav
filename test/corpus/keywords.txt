@@ -1,0 +1,60 @@
+==================
+Boolean and null keywords
+==================
+on: true
+off: false
+label: null
+mixed: true
+literal:: true
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (keyword
+      (kw_true)))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (keyword
+      (kw_false)))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (keyword
+      (kw_null)))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (keyword
+      (kw_true)))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (keyword
+      (kw_true))))
+
+==================
+Capitalized keywords are strings
+==================
+yes: True
+no: FALSE
+maybe: Null
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))

@@ -1,0 +1,37 @@
+==================
+Stripped multiline string
+==================
+body: (
+    {
+      "qwe": 1
+    }
+)
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_stripped
+      (multiline_content_line)
+      (multiline_content_line)
+      (multiline_content_line))))
+
+==================
+Verbatim multiline string
+==================
+sig: ((
+  hello
+  world
+))
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_verbatim
+      (multiline_content_line)
+      (multiline_content_line))))

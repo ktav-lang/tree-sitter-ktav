@@ -1,0 +1,68 @@
+==================
+Typed integer marker
+==================
+port:i 8080
+offset:i -100
+count:i +5
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar)))
+
+==================
+Typed float marker
+==================
+ratio:f 0.5
+eps:f 1.5e-10
+neg:f -0.001
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (scalar)))
+
+==================
+Raw string marker
+==================
+pattern:: [a-z]+
+ipv6:: [::1]:8080
+template:: {issue.id}.tpl
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar)))

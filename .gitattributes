@@ -1,0 +1,11 @@
+# Normalize text line endings to LF in the repository, regardless of
+# contributor's platform or `core.autocrlf` setting. Working-tree files
+# on all platforms check out with LF — no more CRLF/LF noise in
+# `git status` from Windows clients.
+* text=auto eol=lf
+
+# Generated parser code — committed per tree-sitter convention. Mark
+# as generated so GitHub diffs collapse it by default.
+src/parser.c linguist-generated=true
+src/grammar.json linguist-generated=true
+src/node-types.json linguist-generated=true

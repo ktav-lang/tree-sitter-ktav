@@ -1,0 +1,32 @@
+==================
+Dotted keys produce nested object paths
+==================
+server.host: 127.0.0.1
+server.port: 8080
+app.debug: true
+deeply.nested.path.value: hi
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (keyword
+      (kw_true)))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (scalar)))

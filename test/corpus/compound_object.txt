@@ -1,0 +1,48 @@
+==================
+Multi-line object
+==================
+server: {
+    host: 127.0.0.1
+    port: 8080
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar)))))
+
+==================
+Nested objects
+==================
+outer: {
+    inner: {
+        x: 1
+    }
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (compound_object
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar)))))))

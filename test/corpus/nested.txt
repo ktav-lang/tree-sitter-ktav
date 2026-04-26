@@ -1,0 +1,67 @@
+==================
+Array of objects
+==================
+upstreams: [
+    {
+        host: a.example
+        port: 1080
+    }
+    {
+        host: b.example
+        port: 1080
+    }
+]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_array
+      (array_item
+        value: (compound_object
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar))
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar))))
+      (array_item
+        value: (compound_object
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar))
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar)))))))
+
+==================
+Object containing array
+==================
+config: {
+    tags: [
+        prod
+        eu
+    ]
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (compound_array
+          (array_item
+            value: (scalar))
+          (array_item
+            value: (scalar)))))))

@@ -1,0 +1,44 @@
+==================
+Line comments
+==================
+# top-level comment
+port: 8080
+# another comment
+host: localhost
+
+---
+
+(source_file
+  (comment)
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (comment)
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+Hash inside value is content not comment
+==================
+color: #ff00ff
+url: http://x/#frag
+tag: a#b
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))

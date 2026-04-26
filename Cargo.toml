@@ -1,0 +1,33 @@
+[package]
+name        = "tree-sitter-ktav"
+version     = "0.1.0"
+edition     = "2021"
+authors     = ["Marat K <phpcraftdream@gmail.com>"]
+license     = "MIT"
+description = "Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format"
+readme      = "README.md"
+homepage    = "https://github.com/ktav-lang/tree-sitter-ktav"
+repository  = "https://github.com/ktav-lang/tree-sitter-ktav"
+keywords    = ["parser", "tree-sitter", "ktav", "config", "incremental"]
+categories  = ["parser-implementations", "parsing", "text-editors"]
+build       = "bindings/rust/build.rs"
+include     = [
+    "bindings/rust/*",
+    "grammar.js",
+    "queries/*",
+    "src/*",
+    "LICENSE",
+    "README.md",
+]
+
+[lib]
+path = "bindings/rust/lib.rs"
+
+[dependencies]
+tree-sitter-language = "0.1"
+
+[build-dependencies]
+cc = "1"
+
+[dev-dependencies]
+tree-sitter = "0.25"

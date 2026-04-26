@@ -1,0 +1,64 @@
+==================
+Realistic mixed config
+==================
+# server config
+service: web
+port:i 8080
+ratio:f 0.75
+tls: true
+tags: [
+    prod
+    eu-west-1
+]
+db.host: primary.internal
+db.timeout:i 30
+banner: ((
+welcome
+to the service
+))
+
+---
+
+(source_file
+  (comment)
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (keyword
+      (kw_true)))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_array
+      (array_item
+        value: (scalar))
+      (array_item
+        value: (scalar))))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_int)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_verbatim
+      (multiline_content_line)
+      (multiline_content_line))))
