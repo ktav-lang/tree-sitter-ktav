@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install -g tree-sitter-cli@^0.24
+      - run: npm install -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - run: tree-sitter test
       - uses: dtolnay/rust-toolchain@stable
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install -g tree-sitter-cli@^0.24
+      - run: npm install -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - uses: dtolnay/rust-toolchain@stable
       - name: cargo publish
@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
-      - run: npm install -g tree-sitter-cli@^0.24
+      - run: npm install -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - run: npm install
       - name: npm publish
