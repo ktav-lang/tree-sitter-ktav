@@ -13,6 +13,7 @@ server: {
     key: (key)
     separator: (sep_string)
     value: (compound_object
+      (open_brace)
       (object_pair
         key: (key)
         separator: (sep_string)
@@ -20,7 +21,8 @@ server: {
       (object_pair
         key: (key)
         separator: (sep_string)
-        value: (scalar)))))
+        value: (scalar))
+      (close_brace))))
 
 ==================
 Nested objects
@@ -38,11 +40,58 @@ outer: {
     key: (key)
     separator: (sep_string)
     value: (compound_object
+      (open_brace)
       (object_pair
         key: (key)
         separator: (sep_string)
         value: (compound_object
+          (open_brace)
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar)))))))
+            value: (scalar))
+          (close_brace)))
+      (close_brace))))
+
+==================
+Compound object with nested compounds (visible bracket tokens)
+==================
+root: {
+    arr: [
+        a
+        b
+    ]
+    sub: {
+        k: v
+    }
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (compound_array
+          (open_bracket)
+          (array_item
+            value: (scalar))
+          (array_item
+            value: (scalar))
+          (close_bracket)))
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (compound_object
+          (open_brace)
+          (object_pair
+            key: (key)
+            separator: (sep_string)
+            value: (scalar))
+          (close_brace)))
+      (close_brace))))

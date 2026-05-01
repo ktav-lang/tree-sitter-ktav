@@ -11,6 +11,43 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.2.0] — 2026-05-01
+
+Strict spec-conformance pass. The grammar now rejects the two
+syntactic forms that the previous release accepted by oversight.
+
+### Added
+
+- **External scanner (`src/scanner.c`)** with two custom tokens:
+  - `_marker_ws` — zero-width assertion; succeeds only when the
+    byte immediately after a pair separator (`:`, `::`, `:i`, `:f`)
+    is space, tab, CR, LF, or EOF. Enforces § 6.10
+    (**MissingSeparatorSpace**).
+  - `_strict_eol` — `[ \t]*\r?\n` (or EOF); used as the line
+    terminator for compound and multi-line-string closers, so that
+    `} trailing\n`, `] trailing\n`, `) trailing\n`, `)) trailing\n`
+    are now syntax errors (§ 5.6.1 and the closer-cleanliness rule).
+- **Corpus tests** (`test/corpus/spec-conformance.txt`) covering
+  the four glued-marker forms, the four empty-body forms, the four
+  whitespace-and-body forms, both trailing-after-closer cases, deep
+  nesting with comments and blank lines, and dotted keys around
+  both multi-line-string forms.
+
+### Changed
+
+- `grammar.js` declares the two new externals and rewires
+  `object_pair`, `array_item`, and the four compound-closer rules
+  accordingly.
+- `binding.gyp` and `bindings/rust/build.rs` now compile
+  `src/scanner.c` alongside `src/parser.c`.
+
+### Removed (limitations)
+
+- The "mandatory whitespace after marker" gap (§ 6.10) — now
+  enforced.
+- The "trailing content after compound closer" gap — now rejected
+  for `}`, `]`, `)`, `))`.
+
 ## [0.1.0] — 2026-04-26
 
 Initial release. Implements [Ktav spec 0.1.0](https://github.com/ktav-lang/spec/blob/main/versions/0.1/spec.md).

@@ -12,26 +12,25 @@
  *   - an array item (inside an open `[` array)
  *   - raw content of a multi-line string
  *
- * Strategy without an external scanner:
+ * Strategy:
  *   - Newlines are explicit (`_newline`) and structural openers/closers
  *     are tokens that include the trailing whitespace + newline so they
  *     can NEVER be confused with a scalar starting with the same byte.
  *   - The four pair separators (`:`, `::`, `:i`, `:f`) are recognized
  *     by the lexer with longest-match precedence (`::` > `:`, `:i`/`:f`
  *     > `:`).
- *   - The value body is captured as a single line-token, with subtypes
- *     preferred via positive precedence: empty-compounds, openers,
- *     keywords, and scalar (catch-all).
- *
- * KNOWN LIMITATIONS without an external scanner:
- *   - The grammar accepts the spec's syntax but does not enforce the
- *     "mandatory whitespace after marker" rule (§ 6.10) — `key:value`
- *     parses without error. Lints / consumers can flag that case.
+ *   - The mandatory-whitespace-after-marker rule (§ 6.10) is enforced
+ *     by an external scanner token `_marker_ws`, which is a zero-width
+ *     assertion that only succeeds when the byte right after the
+ *     separator is space, tab, CR, LF, or EOF. `key:value` (no space)
+ *     therefore fails to parse.
+ *   - The closer-on-its-own-line rule for compounds and multi-line
+ *     strings is enforced via the external scanner's `_strict_eol`
+ *     token, which only matches `[ \t]*\r?\n` (or EOF) — any non-
+ *     whitespace text between the closer and the line terminator is
+ *     a parse error.
  *   - Multi-line string content is captured as a sequence of opaque
- *     "raw lines" up to the matching terminator. The closer-on-its-own-
- *     line rule (§ 5.6.1) is implemented at the LR(1) level; pathologic
- *     "trailing-whitespace-after-closer" cases that the spec rejects
- *     are accepted here.
+ *     "raw lines" up to the matching terminator.
  *   - Indentation is not significant (matches the spec).
  */
 
@@ -44,7 +43,10 @@ module.exports = grammar({
     /[ \t]+/,
   ],
 
-  externals: $ => [],
+  externals: $ => [
+    $._marker_ws,   // zero-width assertion after pair separators
+    $._strict_eol,  // [ \t]*\r?\n  (or EOF) — for compound closers
+  ],
 
   conflicts: $ => [],
 
@@ -72,6 +74,10 @@ module.exports = grammar({
     ),
 
     // ---- Object pair ----
+    //
+    // After the separator, the external `_marker_ws` token asserts
+    // that the next byte is whitespace, CR, LF, or EOF. This enforces
+    // § 6.10 (mandatory whitespace after marker): `key:value` fails.
     object_pair: $ => seq(
       field('key', $.key),
       field('separator', choice(
@@ -80,6 +86,7 @@ module.exports = grammar({
         $.sep_float,     // ":f"
         $.sep_string,    // ":"
       )),
+      $._marker_ws,
       choice(
         // Empty body: separator immediately followed by newline.
         field('value', $.empty_value),
@@ -110,11 +117,6 @@ module.exports = grammar({
     _key_segment: $ => /[^\s\[\]\{\}:#.\r\n]+/,
 
     // ---- Value line ----
-    // A value line is everything from after the separator to the end
-    // of the line — followed by a newline. The line may also OPEN a
-    // multi-line compound (object / array / multi-line string), in
-    // which case the newline is part of the opener token and the
-    // compound's body follows.
     _value_line: $ => choice(
       // Compound openers (eat the newline).
       $.compound_object,
@@ -133,9 +135,6 @@ module.exports = grammar({
     ),
 
     // Empty value = separator immediately followed by newline.
-    // Used in object_pair only (a plain blank line in an array is a
-    // `blank_line`, not an empty array item — array items must have
-    // a marker or non-blank body).
     empty_value: $ => $._newline,
 
     // ---- Empty inline compounds (one full line) ----
@@ -145,43 +144,53 @@ module.exports = grammar({
     empty_double_paren: $ => seq(token(prec(5, '(())')), $._newline),
 
     // ---- Multi-line compounds ----
-    // Openers (`{`, `[`, `(`, `((`) are tokens that include the rest
-    // of the line up to and including the newline, so they cannot be
-    // confused with a scalar starting with `{` / `[` / `(`.
-    _open_brace:    $ => token(prec(4, /\{[ \t]*\r?\n/)),
-    _close_brace:   $ => token(prec(4, /\}[ \t]*\r?\n/)),
-    _open_bracket:  $ => token(prec(4, /\[[ \t]*\r?\n/)),
-    _close_bracket: $ => token(prec(4, /\][ \t]*\r?\n/)),
-    _open_paren:    $ => token(prec(4, /\([ \t]*\r?\n/)),
-    _close_paren:   $ => token(prec(4, /\)[ \t]*\r?\n/)),
-    _open_dparen:   $ => token(prec(5, /\(\([ \t]*\r?\n/)),
-    _close_dparen:  $ => token(prec(5, /\)\)[ \t]*\r?\n/)),
+    //
+    // Openers are tokens that include the rest of the line up to and
+    // including the newline, so they cannot be confused with a scalar
+    // starting with the same byte. Closers, by contrast, are split
+    // into the bracket character(s) plus the external `_strict_eol`
+    // token; this lets the scanner reject pathological lines like
+    // `}   trailing_text\n` (§ 5.6.1 and the cleanliness rule for
+    // object/array closers).
+    open_brace:    $ => token(prec(4, /\{[ \t]*\r?\n/)),
+    close_brace:   $ => seq(token(prec(4, '}')),    $._strict_eol),
+    open_bracket:  $ => token(prec(4, /\[[ \t]*\r?\n/)),
+    close_bracket: $ => seq(token(prec(4, ']')),    $._strict_eol),
+    open_paren:    $ => token(prec(4, /\([ \t]*\r?\n/)),
+    close_paren:   $ => seq(token(prec(4, ')')),    $._strict_eol),
+    open_dparen:   $ => token(prec(5, /\(\([ \t]*\r?\n/)),
+    close_dparen:  $ => seq(token(prec(5, '))')),   $._strict_eol),
 
     compound_object: $ => seq(
-      $._open_brace,
+      $.open_brace,
       repeat(choice($.comment, $.blank_line, $.object_pair)),
-      $._close_brace,
+      $.close_brace,
     ),
 
     compound_array: $ => seq(
-      $._open_bracket,
+      $.open_bracket,
       repeat(choice($.comment, $.blank_line, $.array_item)),
-      $._close_bracket,
+      $.close_bracket,
     ),
 
     // ---- Array items ----
+    //
+    // Marker-prefixed items must, like pair lines, have whitespace or
+    // EOL after the marker (§ 6.10).
     array_item: $ => choice(
-      // Marker-prefixed items
       seq(
         field('marker', $.sep_raw),
+        $._marker_ws,
         field('value', choice($.empty_value, $.scalar)),
       ),
       seq(
         field('marker', $.sep_int),
+        $._marker_ws,
         field('value', choice($.empty_value, $.scalar)),
       ),
       seq(
         field('marker', $.sep_float),
+        $._marker_ws,
         field('value', choice($.empty_value, $.scalar)),
       ),
       // Plain value item — same set as object pair value.
@@ -190,30 +199,25 @@ module.exports = grammar({
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(
-      $._open_paren,
+      $.open_paren,
       repeat($.multiline_content_line),
-      $._close_paren,
+      $.close_paren,
     ),
 
     multiline_verbatim: $ => seq(
-      $._open_dparen,
+      $.open_dparen,
       repeat($.multiline_content_line),
-      $._close_dparen,
+      $.close_dparen,
     ),
 
     // A content line inside a multi-line string. Captured as one
-    // token. The closer tokens (`)\n`, `))\n`) win at the LR(1)
-    // boundary because they require their own line; any line whose
-    // content includes more than just the terminator falls through
-    // to this rule.
+    // token. The closer tokens (`)`, `))` plus _strict_eol) win at
+    // the LR(1) boundary because they require their own line; any
+    // line whose content includes more than just the terminator
+    // falls through to this rule.
     multiline_content_line: $ => token(prec(-1, /[^\r\n]*\r?\n/)),
 
     // ---- Scalar (default value body, until end of line) ----
-    // A scalar runs from the first non-whitespace, non-`#` char to
-    // end of line. The token is marked as low-precedence so a single
-    // `:` / `.` in *key* position lexes as the structural token; in
-    // value position the parser asks for a scalar, and the lexer
-    // emits the longest match starting with a value-friendly char.
     scalar: $ => seq(
       $._scalar_text,
       $._newline,
@@ -227,7 +231,6 @@ module.exports = grammar({
     _scalar_text: $ => /[^\s\r\n][^\r\n]*/,
 
     // ---- Keywords ----
-    // Each keyword is followed by EOL (the value-line terminator).
     keyword: $ => seq(
       choice($.kw_null, $.kw_true, $.kw_false),
       $._newline,

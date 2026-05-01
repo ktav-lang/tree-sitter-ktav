@@ -79,6 +79,26 @@
     "fields": {}
   },
   {
+    "type": "close_brace",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "close_bracket",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "close_dparen",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "close_paren",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "comment",
     "named": true,
     "fields": {}
@@ -89,7 +109,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "array_item",
@@ -100,7 +120,15 @@
           "named": true
         },
         {
+          "type": "close_bracket",
+          "named": true
+        },
+        {
           "type": "comment",
+          "named": true
+        },
+        {
+          "type": "open_bracket",
           "named": true
         }
       ]
@@ -112,10 +140,14 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "blank_line",
+          "named": true
+        },
+        {
+          "type": "close_brace",
           "named": true
         },
         {
@@ -124,6 +156,10 @@
         },
         {
           "type": "object_pair",
+          "named": true
+        },
+        {
+          "type": "open_brace",
           "named": true
         }
       ]
@@ -203,10 +239,18 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
+          "type": "close_paren",
+          "named": true
+        },
+        {
           "type": "multiline_content_line",
+          "named": true
+        },
+        {
+          "type": "open_paren",
           "named": true
         }
       ]
@@ -218,10 +262,18 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
+          "type": "close_dparen",
+          "named": true
+        },
+        {
           "type": "multiline_content_line",
+          "named": true
+        },
+        {
+          "type": "open_dparen",
           "named": true
         }
       ]
@@ -357,11 +409,23 @@
     "named": false
   },
   {
+    "type": ")",
+    "named": false
+  },
+  {
+    "type": "))",
+    "named": false
+  },
+  {
     "type": ".",
     "named": false
   },
   {
     "type": "[]",
+    "named": false
+  },
+  {
+    "type": "]",
     "named": false
   },
   {
@@ -378,6 +442,22 @@
   },
   {
     "type": "multiline_content_line",
+    "named": true
+  },
+  {
+    "type": "open_brace",
+    "named": true
+  },
+  {
+    "type": "open_bracket",
+    "named": true
+  },
+  {
+    "type": "open_dparen",
+    "named": true
+  },
+  {
+    "type": "open_paren",
     "named": true
   },
   {
@@ -398,6 +478,10 @@
   },
   {
     "type": "{}",
+    "named": false
+  },
+  {
+    "type": "}",
     "named": false
   }
 ]

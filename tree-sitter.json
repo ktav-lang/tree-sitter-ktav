@@ -1,0 +1,35 @@
+{
+  "grammars": [
+    {
+      "name": "ktav",
+      "camelcase": "Ktav",
+      "scope": "source.ktav",
+      "path": ".",
+      "file-types": ["ktav"],
+      "injection-regex": "^ktav$"
+    }
+  ],
+  "metadata": {
+    "version": "0.2.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammar for Ktav (כְּתָב), the Written Configuration Format",
+    "authors": [
+      {
+        "name": "ktav-lang"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/ktav-lang/tree-sitter-ktav",
+      "homepage": "https://github.com/ktav-lang/spec"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": false,
+    "zig": false
+  }
+}

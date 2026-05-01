@@ -14,12 +14,14 @@ items: [
     key: (key)
     separator: (sep_string)
     value: (compound_array
+      (open_bracket)
       (array_item
         value: (scalar))
       (array_item
         value: (scalar))
       (array_item
-        value: (scalar)))))
+        value: (scalar))
+      (close_bracket))))
 
 ==================
 Array with marker items
@@ -40,6 +42,7 @@ mixed: [
     key: (key)
     separator: (sep_string)
     value: (compound_array
+      (open_bracket)
       (array_item
         value: (scalar))
       (array_item
@@ -56,4 +59,5 @@ mixed: [
           (kw_true)))
       (array_item
         value: (keyword
-          (kw_null))))))
+          (kw_null)))
+      (close_bracket))))

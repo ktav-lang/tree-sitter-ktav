@@ -40,8 +40,12 @@ empty_arr: [
   (object_pair
     key: (key)
     separator: (sep_string)
-    value: (compound_object))
+    value: (compound_object
+      (open_brace)
+      (close_brace)))
   (object_pair
     key: (key)
     separator: (sep_string)
-    value: (compound_array)))
+    value: (compound_array
+      (open_bracket)
+      (close_bracket))))

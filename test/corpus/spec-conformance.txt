@@ -1,0 +1,215 @@
+==================
+§ 6.10: marker glued to value is rejected (plain colon)
+:error
+==================
+key:value
+
+---
+
+(source_file
+  (ERROR
+    (key)))
+
+==================
+§ 6.10: raw marker glued to value is rejected
+:error
+==================
+pattern::[a-z]+
+
+---
+
+(source_file
+  (ERROR
+    (key)))
+
+==================
+§ 6.10: typed-int marker glued to digits is rejected
+:error
+==================
+port:i42
+
+---
+
+(source_file
+  (ERROR
+    (key)))
+
+==================
+§ 6.10: typed-float marker glued to digits is rejected
+:error
+==================
+ratio:f0.5
+
+---
+
+(source_file
+  (ERROR
+    (key)))
+
+==================
+§ 6.10: empty body after each marker is allowed
+==================
+a:
+b::
+c:i
+d:f
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_value))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (empty_value))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (empty_value))
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (empty_value)))
+
+==================
+§ 6.10: every marker form with whitespace and a body
+==================
+a:  v1
+b::  v2
+c:i  42
+d:f  1.5
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_float)
+    value: (scalar)))
+
+==================
+§ 5.6.1: trailing non-whitespace after closer is rejected
+:error
+==================
+o: {
+  k: v
+} trailing
+
+---
+
+(source_file
+  (ERROR
+    (key)
+    (sep_string)
+    (key)
+    (sep_string)
+    (scalar)
+    (key)))
+
+==================
+§ 5.6.1: trailing whitespace after closer is allowed
+==================
+o: {
+  k: v
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (close_brace))))
+
+==================
+Nested compounds with comments and blank lines
+==================
+root: {
+  # a comment in the middle
+  inner: [
+
+    a
+    b
+  ]
+
+  flag: true
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (open_brace)
+      (comment)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (compound_array
+          (open_bracket)
+          (blank_line)
+          (array_item
+            value: (scalar))
+          (array_item
+            value: (scalar))
+          (close_bracket)))
+      (blank_line)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (keyword
+          (kw_true)))
+      (close_brace))))
+
+==================
+Both multi-line forms with dotted keys around them
+==================
+a.b: (
+  inner
+)
+c.d: ((
+  raw
+))
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (multiline_stripped
+      (open_paren)
+      (multiline_content_line)
+      (close_paren)))
+  (object_pair
+    key: (key
+      (dotted_key))
+    separator: (sep_string)
+    value: (multiline_verbatim
+      (open_dparen)
+      (multiline_content_line)
+      (close_dparen))))

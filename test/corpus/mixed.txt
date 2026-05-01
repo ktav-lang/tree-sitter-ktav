@@ -42,10 +42,12 @@ to the service
     key: (key)
     separator: (sep_string)
     value: (compound_array
+      (open_bracket)
       (array_item
         value: (scalar))
       (array_item
-        value: (scalar))))
+        value: (scalar))
+      (close_bracket)))
   (object_pair
     key: (key
       (dotted_key))
@@ -60,5 +62,7 @@ to the service
     key: (key)
     separator: (sep_string)
     value: (multiline_verbatim
+      (open_dparen)
       (multiline_content_line)
-      (multiline_content_line))))
+      (multiline_content_line)
+      (close_dparen))))

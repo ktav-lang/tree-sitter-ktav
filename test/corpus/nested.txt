@@ -19,8 +19,10 @@ upstreams: [
     key: (key)
     separator: (sep_string)
     value: (compound_array
+      (open_bracket)
       (array_item
         value: (compound_object
+          (open_brace)
           (object_pair
             key: (key)
             separator: (sep_string)
@@ -28,9 +30,11 @@ upstreams: [
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar))))
+            value: (scalar))
+          (close_brace)))
       (array_item
         value: (compound_object
+          (open_brace)
           (object_pair
             key: (key)
             separator: (sep_string)
@@ -38,7 +42,9 @@ upstreams: [
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar)))))))
+            value: (scalar))
+          (close_brace)))
+      (close_bracket))))
 
 ==================
 Object containing array
@@ -57,11 +63,15 @@ config: {
     key: (key)
     separator: (sep_string)
     value: (compound_object
+      (open_brace)
       (object_pair
         key: (key)
         separator: (sep_string)
         value: (compound_array
+          (open_bracket)
           (array_item
             value: (scalar))
           (array_item
-            value: (scalar)))))))
+            value: (scalar))
+          (close_bracket)))
+      (close_brace))))

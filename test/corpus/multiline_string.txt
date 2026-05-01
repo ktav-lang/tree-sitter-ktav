@@ -14,9 +14,11 @@ body: (
     key: (key)
     separator: (sep_string)
     value: (multiline_stripped
+      (open_paren)
       (multiline_content_line)
       (multiline_content_line)
-      (multiline_content_line))))
+      (multiline_content_line)
+      (close_paren))))
 
 ==================
 Verbatim multiline string
@@ -33,5 +35,7 @@ sig: ((
     key: (key)
     separator: (sep_string)
     value: (multiline_verbatim
+      (open_dparen)
       (multiline_content_line)
-      (multiline_content_line))))
+      (multiline_content_line)
+      (close_dparen))))

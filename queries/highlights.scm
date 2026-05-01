@@ -18,12 +18,19 @@
 (sep_float)  @punctuation.special
 
 ; ---- Compound brackets ----
-; The structural openers / closers (`{`, `}`, `[`, `]`, `(`, `((`,
-; `)`, `))`) are emitted as part of compound nodes rather than as
-; standalone anonymous tokens (they include the trailing newline).
-; Highlight the entire compound nodes' first/last lines instead.
-(compound_object) @punctuation.bracket
-(compound_array)  @punctuation.bracket
+; The structural openers / closers each form their own visible token
+; node (the opener swallows trailing horizontal whitespace + newline,
+; and the closer is the bracket char(s) followed by `_strict_eol`).
+; Capturing them directly leaves the inner content uncoloured so
+; nested highlights work correctly in Helix and nvim-treesitter.
+(open_brace)    @punctuation.bracket
+(close_brace)   @punctuation.bracket
+(open_bracket)  @punctuation.bracket
+(close_bracket) @punctuation.bracket
+(open_paren)    @string
+(close_paren)   @string
+(open_dparen)   @string
+(close_dparen)  @string
 
 ; ---- Empty inline forms ----
 (empty_object)       @punctuation.bracket

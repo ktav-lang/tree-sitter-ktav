@@ -12,13 +12,14 @@ fn main() {
     c_config.file(&parser_path);
     println!("cargo:rerun-if-changed={}", parser_path.to_str().unwrap());
 
-    // External scanner is not used by this grammar; if added later,
-    // uncomment the lines below.
-    // let scanner_path = src_dir.join("scanner.c");
-    // if scanner_path.exists() {
-    //     c_config.file(&scanner_path);
-    //     println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
-    // }
+    // External scanner — enforces § 6.10 (mandatory whitespace after
+    // marker) and § 5.6.1 / closer-cleanliness via two custom tokens.
+    // External scanner is mandatory: without it, the parser produced
+    // by tree-sitter would reference unresolved external symbols and
+    // segfault at runtime. Fail the build loudly if it's missing.
+    let scanner_path = src_dir.join("scanner.c");
+    c_config.file(&scanner_path);
+    println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
 
     c_config.compile("tree-sitter-ktav");
 }
