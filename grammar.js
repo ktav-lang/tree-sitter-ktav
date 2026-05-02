@@ -44,8 +44,10 @@ module.exports = grammar({
   ],
 
   externals: $ => [
-    $._marker_ws,   // zero-width assertion after pair separators
-    $._strict_eol,  // [ \t]*\r?\n  (or EOF) — for compound closers
+    $._marker_ws,        // zero-width assertion after pair separators
+    $._strict_eol,       // [ \t]*\r?\n  (or EOF) — for compound closers
+    $._stripped_close,   // `)[ \t]*\r?\n` (or EOF) — only valid inside `(...)` body
+    $._verbatim_close,   // `))[ \t]*\r?\n` (or EOF) — only valid inside `((...))` body
   ],
 
   conflicts: $ => [],
@@ -78,19 +80,25 @@ module.exports = grammar({
     // After the separator, the external `_marker_ws` token asserts
     // that the next byte is whitespace, CR, LF, or EOF. This enforces
     // § 6.10 (mandatory whitespace after marker): `key:value` fails.
-    object_pair: $ => seq(
-      field('key', $.key),
-      field('separator', choice(
-        $.sep_raw,       // "::" — must be tested before ":"
-        $.sep_int,       // ":i"
-        $.sep_float,     // ":f"
-        $.sep_string,    // ":"
-      )),
-      $._marker_ws,
-      choice(
-        // Empty body: separator immediately followed by newline.
-        field('value', $.empty_value),
-        field('value', $._value_line),
+    object_pair: $ => choice(
+      // After `::`, `:i`, `:f` the body is a literal/typed scalar — § 5.2:
+      // it is NOT dispatched through compound-opener / multi-line dispatch.
+      // Only `empty_value` (immediate newline) or `scalar` is allowed.
+      seq(
+        field('key', $.key),
+        field('separator', choice($.sep_raw, $.sep_int, $.sep_float)),
+        $._marker_ws,
+        field('value', choice($.empty_value, $.scalar)),
+      ),
+      // After `:` the body goes through the full § 5.2 dispatch.
+      seq(
+        field('key', $.key),
+        field('separator', $.sep_string),
+        $._marker_ws,
+        choice(
+          field('value', $.empty_value),
+          field('value', $._value_line),
+        ),
       ),
     ),
 
@@ -157,9 +165,14 @@ module.exports = grammar({
     open_bracket:  $ => token(prec(4, /\[[ \t]*\r?\n/)),
     close_bracket: $ => seq(token(prec(4, ']')),    $._strict_eol),
     open_paren:    $ => token(prec(4, /\([ \t]*\r?\n/)),
-    close_paren:   $ => seq(token(prec(4, ')')),    $._strict_eol),
     open_dparen:   $ => token(prec(5, /\(\([ \t]*\r?\n/)),
-    close_dparen:  $ => seq(token(prec(5, '))')),   $._strict_eol),
+    // close_paren / close_dparen are emitted by the external scanner as
+    // `_stripped_close` / `_verbatim_close`. They are context-sensitive:
+    // inside `(...)` only `)` closes (a `))` line is content); inside
+    // `((...))` only `))` closes (a single `)` line is content). The
+    // scanner consults `valid_symbols` to decide which form to attempt.
+    close_paren:   $ => $._stripped_close,
+    close_dparen:  $ => $._verbatim_close,
 
     compound_object: $ => seq(
       $.open_brace,

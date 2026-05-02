@@ -10,6 +10,37 @@
 
 **语言：** [English](CHANGELOG.md) · [Русский](CHANGELOG.ru.md) · **简体中文**
 
+## [0.2.1] — 2026-05-01
+
+缺陷修复版本。conformance 测试套件中此前两个失败的 valid 用例现已
+通过，`tests/conformance.rs` 中的 `KNOWN_VALID_FAILURES` 列表已清空。
+
+### 修复
+
+- **§ 5.2（raw / 类型化标记之后的值体不再走多行派发）。** 在 `::`、
+  `:i`、`:f` 之后，`grammar.js` 现在仅允许 `empty_value` 或 `scalar`。
+  此前以 `(` 开头的值体（例如 `a:: (`）会被错误地识别为多行 stripped
+  开始符；现在会被原样捕获为单行标量。同样，`null` / `true` / `false`
+  在 `::` 之后将解析为 `scalar`，与规范对 raw 标记体的「字面字符串」
+  解释一致。（`test/corpus/keywords.txt` 已同步更新，先前的形状不正确。）
+- **stripped `(...)` 内部的 `))` 与 verbatim `((...))` 内部的单个 `)`
+  现在被视为内容而非闭合符。** 两个闭合符（`)` / `))`）已变为上下文
+  相关的外部扫描器 token（`_stripped_close`、`_verbatim_close`）；
+  扫描器仅在当前解析状态下有效时发出对应 token，不匹配的括号序列
+  会回落到 `multiline_content_line`。
+
+### 新增
+
+- `test/corpus/spec-conformance.txt` 中新增四个 corpus 用例：raw
+  标记后带 `(`、`((`、`()`、`(())`；stripped 块内含 `))`；verbatim
+  块内含单个 `)`；stripped 块内含 `((`。
+- 两个新的外部 token：`_stripped_close`、`_verbatim_close`（在
+  `grammar.js` 中声明，在 `src/scanner.c` 中实现）。
+
+### 变更
+
+- `tests/conformance.rs` —— `KNOWN_VALID_FAILURES` 现已为空。
+
 ## [0.2.0] — 2026-05-01
 
 严格规范一致性升级。语法现在拒绝上一版本因疏漏而接受的两种语法

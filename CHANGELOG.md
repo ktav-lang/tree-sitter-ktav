@@ -11,6 +11,42 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.2.1] — 2026-05-01
+
+Bug-fix release. Two valid-fixture gaps from the conformance suite
+are now closed, so `KNOWN_VALID_FAILURES` in `tests/conformance.rs`
+is empty.
+
+### Fixed
+
+- **§ 5.2 (raw / typed marker bodies are NOT dispatched).** After
+  `::`, `:i`, or `:f` the value is now restricted in `grammar.js` to
+  `empty_value` or `scalar`. Previously a body that began with `(` —
+  e.g. `a:: (` — was mis-dispatched as a multi-line stripped opener;
+  now it is captured verbatim as a one-line scalar. This also makes
+  `null` / `true` / `false` after `::` parse as a `scalar`, matching
+  the spec's "literal string" interpretation of raw-marker bodies.
+  (`test/corpus/keywords.txt` updated; the prior shape was incorrect.)
+- **`))` inside a stripped `(...)` and `)` inside a verbatim
+  `((...))` are now content, not a closer.** The two compound
+  closers `)` / `))` became context-sensitive external scanner tokens
+  (`_stripped_close`, `_verbatim_close`) so the scanner only emits
+  the one valid in the current parse state, and a non-matching
+  bracket sequence falls through to `multiline_content_line`.
+
+### Added
+
+- Four corpus tests in `test/corpus/spec-conformance.txt`: raw-marker
+  with `(`, `((`, `()`, `(())` bodies; stripped block containing
+  `))`; verbatim block containing single `)`; stripped block
+  containing `((`.
+- Two new external tokens: `_stripped_close`, `_verbatim_close`
+  (declared in `grammar.js`, implemented in `src/scanner.c`).
+
+### Changed
+
+- `tests/conformance.rs` — `KNOWN_VALID_FAILURES` is now empty.
+
 ## [0.2.0] — 2026-05-01
 
 Strict spec-conformance pass. The grammar now rejects the two

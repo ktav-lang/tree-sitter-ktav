@@ -46,14 +46,12 @@ use std::path::{Path, PathBuf};
 /// the tree-sitter grammar specifically. Listed by path-suffix relative
 /// to `spec/versions/0.1/tests/`.
 ///
-/// * `valid/multiline/stripped_contains_double_paren.ktav` — `((` inside
-///   a `(...)` stripped multi-line is mis-tokenised as a nested opener.
-/// * `valid/raw_marker/paren_literals.ktav` — bare `::` raw scalar whose
-///   body starts with `(` confuses the multi-line dispatch.
-const KNOWN_VALID_FAILURES: &[&str] = &[
-    "valid/multiline/stripped_contains_double_paren.ktav",
-    "valid/raw_marker/paren_literals.ktav",
-];
+/// As of 0.2.1 the list is empty: the previous two entries
+/// (`valid/multiline/stripped_contains_double_paren.ktav` and
+/// `valid/raw_marker/paren_literals.ktav`) were closed by the
+/// context-sensitive multi-line closer scanner and the raw-marker
+/// no-dispatch grammar fix respectively.
+const KNOWN_VALID_FAILURES: &[&str] = &[];
 
 fn spec_tests_dir() -> Option<PathBuf> {
     let manifest = env!("CARGO_MANIFEST_DIR");

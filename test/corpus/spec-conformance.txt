@@ -213,3 +213,93 @@ c.d: ((
       (open_dparen)
       (multiline_content_line)
       (close_dparen))))
+
+==================
+§ 5.2: raw marker keeps `(` body literal (no multi-line dispatch)
+==================
+a:: (
+b:: ((
+c:: ()
+d:: (())
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_raw)
+    value: (scalar)))
+
+==================
+Stripped multiline contains `))` as content
+==================
+body: (
+    hello
+    ))
+    world
+)
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_stripped
+      (open_paren)
+      (multiline_content_line)
+      (multiline_content_line)
+      (multiline_content_line)
+      (close_paren))))
+
+==================
+Verbatim multiline contains a single `)` as content
+==================
+body: ((
+hello
+)
+world
+))
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_verbatim
+      (open_dparen)
+      (multiline_content_line)
+      (multiline_content_line)
+      (multiline_content_line)
+      (close_dparen))))
+
+==================
+Stripped multiline contains `((` as content
+==================
+body: (
+    ((
+)
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (multiline_stripped
+      (open_paren)
+      (multiline_content_line)
+      (close_paren))))
