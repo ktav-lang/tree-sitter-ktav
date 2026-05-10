@@ -40,7 +40,11 @@ jobs:
       - name: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish --token "$CARGO_REGISTRY_TOKEN"
+        # `tree-sitter generate` re-emits `src/parser.c` which is
+        # already committed but may differ in incidental whitespace
+        # or version banners — `--allow-dirty` lets the publish
+        # proceed against the regenerated tree.
+        run: cargo publish --allow-dirty --token "$CARGO_REGISTRY_TOKEN"
 
   publish-npm:
     name: Publish to npm
