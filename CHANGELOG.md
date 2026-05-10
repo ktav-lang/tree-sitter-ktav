@@ -11,6 +11,75 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.3.0] — 2026-05-10
+
+Spec sync: tracks **Ktav 0.1.1** (top-level Array detection,
+§ 5.0.1, additive). The grammar now accepts a document whose root
+is a sequence of array items — bare scalars, typed-marker items
+(`:: …` / `:i …` / `:f …`), lone `{` / `[` openers, multi-line
+openers (`(` / `((`), keywords, and inline empty compounds — at
+the same level where it previously accepted only key-value pairs.
+
+Pair-shaped lines at the root still parse as `object_pair` (spec
+§ 5.0.1 step 2): a colon-bearing line is a pair, not a top-level
+Array item. To force a colon-bearing scalar at the root to be
+captured as an array item, use the raw marker form
+(`:: host: localhost`).
+
+### Added
+
+- New top-level node kind **`top_array_item`**: structurally a
+  sibling of `array_item` but emitted only at the document root
+  (inside `[…]` the existing `array_item` is still used). Its
+  shape is `marker?: <sep_*>`, `value: <…>`. The plain bare-scalar
+  branch produces a new **`top_scalar`** node, distinguished from
+  the inside-of-pair `scalar` so consumers can tell a top-level
+  Array element apart from a pair value at a glance.
+- New corpus file **`test/corpus/top_level_array.txt`** with nine
+  cases: bare scalars, typed/raw markers, nested objects, nested
+  arrays, multi-line items, comments-and-blanks interleaving, the
+  pair-wins-at-root rule, top-level keywords, and top-level
+  empty inline compounds.
+- The conformance suite at `tests/conformance.rs` automatically
+  picks up the spec submodule's new
+  `valid/top_level_array/**` fixtures (six files); they now pass
+  cleanly.
+
+### Changed
+
+- **`grammar.js`**:
+  - `_line` (the top-level repetition unit) now branches on
+    `top_array_item` in addition to `object_pair`.
+  - `comment` is now captured as a single whole-line token
+    (`#[^\r\n]*\r?\n`), with `prec(1)`. Previously it was a
+    three-piece `seq('#', optional(/[^\r\n]*/), $._newline)`.
+    The single-token form is required so that comments out-rank
+    the new whole-line `_top_scalar_text` token at the lexer's
+    longest-match step. The AST shape of `(comment)` is
+    unchanged.
+  - The new `_top_scalar_text` token deliberately spans the
+    whole line **including the trailing newline**. This makes it
+    strictly longer than `_key_segment` (which stops at any
+    structural byte) on a colon-free line, so the lexer commits
+    to the top-level Array-item path on `foo\n` rather than to
+    the always-failing pair-without-separator path. On a
+    colon-bearing line the regex cannot match at all (`:` is
+    excluded), so `_key_segment` is the only viable token and
+    the parser correctly enters `object_pair`.
+- Spec submodule advanced to `7256816` (`spec 0.1.1: top-level
+  Array support`).
+
+### Compatibility
+
+- Existing top-level Object documents parse with **identical AST
+  shape** as in 0.2.x. There are no removed node kinds, no
+  renamed fields, and no parser errors introduced for any
+  previously-valid input.
+- Consumers that walk `source_file` children must now also
+  handle `top_array_item` (in addition to `comment`,
+  `blank_line`, `object_pair`). Highlights, locals, and
+  injections queries in `queries/*.scm` were not affected.
+
 ## [0.2.1] — 2026-05-01
 
 Bug-fix release. Two valid-fixture gaps from the conformance suite

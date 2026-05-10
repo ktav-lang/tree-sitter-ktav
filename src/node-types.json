@@ -99,11 +99,6 @@
     "fields": {}
   },
   {
-    "type": "comment",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "compound_array",
     "named": true,
     "fields": {},
@@ -392,13 +387,96 @@
         {
           "type": "object_pair",
           "named": true
+        },
+        {
+          "type": "top_array_item",
+          "named": true
         }
       ]
     }
   },
   {
-    "type": "#",
-    "named": false
+    "type": "top_array_item",
+    "named": true,
+    "fields": {
+      "marker": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "sep_float",
+            "named": true
+          },
+          {
+            "type": "sep_int",
+            "named": true
+          },
+          {
+            "type": "sep_raw",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_array",
+            "named": true
+          },
+          {
+            "type": "compound_object",
+            "named": true
+          },
+          {
+            "type": "empty_array",
+            "named": true
+          },
+          {
+            "type": "empty_double_paren",
+            "named": true
+          },
+          {
+            "type": "empty_object",
+            "named": true
+          },
+          {
+            "type": "empty_paren",
+            "named": true
+          },
+          {
+            "type": "empty_value",
+            "named": true
+          },
+          {
+            "type": "keyword",
+            "named": true
+          },
+          {
+            "type": "multiline_stripped",
+            "named": true
+          },
+          {
+            "type": "multiline_verbatim",
+            "named": true
+          },
+          {
+            "type": "scalar",
+            "named": true
+          },
+          {
+            "type": "top_scalar",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "top_scalar",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "(())",
@@ -419,6 +497,10 @@
   {
     "type": "]",
     "named": false
+  },
+  {
+    "type": "comment",
+    "named": true
   },
   {
     "type": "kw_false",

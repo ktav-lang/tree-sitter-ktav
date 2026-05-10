@@ -55,13 +55,35 @@ module.exports = grammar({
   word: $ => $._key_segment,
 
   rules: {
+    // The top-level document is a sequence of lines. Per spec § 5.0.1
+    // (added in spec 0.1.1) the root may be either an Object (the
+    // historical default — every content line is a pair) or an Array
+    // (every content line is an array item). Tree-sitter is a generic
+    // parser of trees: rather than encode the spec's "first content
+    // line decides" rule structurally, we accept either kind of line
+    // anywhere at the top level. The reference parser performs the
+    // semantic § 5.0.1 dispatch and rejects mixed roots; the grammar's
+    // job here is only to produce a clean syntax tree for both shapes
+    // (and for editors / LSPs) without spurious ERROR nodes on bare
+    // top-level scalars or `:i`/`:f`/`::` lines.
     source_file: $ => repeat($._line),
 
     // ---- Top-level lines ----
+    //
+    // `top_array_item` covers the top-level Array case (§ 5.0.1): a
+    // bare scalar, a typed-marker item (`:: …`, `:i …`, `:f …`), a
+    // lone `{` / `[` opener, or a `(` / `((` multi-line opener. It
+    // is structurally identical to `array_item` (used inside `[ ]`)
+    // but is kept as a distinct rule so we can apply a lexer-level
+    // disambiguation: a line that classifies as a pair (§ 5.3) must
+    // remain a pair at the top level (spec § 5.0.1 step 2), so
+    // `top_array_item`'s plain bare-scalar branch is given lower
+    // precedence than `object_pair` via `prec.dynamic`.
     _line: $ => choice(
       $.comment,
       $.blank_line,
       $.object_pair,
+      $.top_array_item,
     ),
 
     blank_line: $ => $._newline,
@@ -69,11 +91,13 @@ module.exports = grammar({
     _newline: $ => /\r?\n/,
 
     // ---- Comment ----
-    comment: $ => seq(
-      '#',
-      optional(/[^\r\n]*/),
-      $._newline,
-    ),
+    //
+    // Captured as a single whole-line token so it is the
+    // unambiguous longest match at line start when the line
+    // begins with `#`. Without this, `_top_scalar_text` (also a
+    // whole-line token) would tie or beat a structurally-defined
+    // comment that's split into `'#'` + tail + newline pieces.
+    comment: $ => token(prec(1, /#[^\r\n]*\r?\n/)),
 
     // ---- Object pair ----
     //
@@ -209,6 +233,77 @@ module.exports = grammar({
       // Plain value item — same set as object pair value.
       field('value', $._value_line),
     ),
+
+    // Top-level array item (§ 5.0.1, added in spec 0.1.1).
+    //
+    // Structurally a sibling of `array_item` (used inside `[ ]`),
+    // but with two differences that realise spec § 5.0.1 step 2:
+    //
+    // * The plain bare-scalar branch uses `_top_scalar_text`, a
+    //   token that disallows `:` anywhere in the line. This makes
+    //   any line containing a `:` (i.e. any pair-shaped line)
+    //   parseable ONLY as `object_pair`, never as a top-level
+    //   bare-scalar — which is what § 5.0.1 step 2 requires.
+    //   Per spec note: to force a colon-bearing scalar at the root
+    //   to be an Array item, use the raw marker (`:: foo: bar`).
+    //
+    // * Compound openers (`{`, `[`, `(`, `((`) and the empty-inline
+    //   compound forms (`{}` / `[]` / `()` / `(())`) and the
+    //   keywords are still allowed unchanged — they are
+    //   unambiguous lines that cannot be confused with a pair.
+    top_array_item: $ => choice(
+      seq(
+        field('marker', $.sep_raw),
+        $._marker_ws,
+        field('value', choice($.empty_value, $.scalar)),
+      ),
+      seq(
+        field('marker', $.sep_int),
+        $._marker_ws,
+        field('value', choice($.empty_value, $.scalar)),
+      ),
+      seq(
+        field('marker', $.sep_float),
+        $._marker_ws,
+        field('value', choice($.empty_value, $.scalar)),
+      ),
+      field('value', $.compound_object),
+      field('value', $.compound_array),
+      field('value', $.multiline_stripped),
+      field('value', $.multiline_verbatim),
+      field('value', $.empty_object),
+      field('value', $.empty_array),
+      field('value', $.empty_paren),
+      field('value', $.empty_double_paren),
+      field('value', $.keyword),
+      // Bare-scalar branch — the line is captured as a `scalar`
+      // node whose text comes from the `_top_scalar_text` token
+      // (no `:` allowed). Wrapping in `top_scalar` keeps the AST
+      // tidy: tools see exactly the same `(scalar)` shape as
+      // elsewhere, with the only difference being which lexer
+      // rule produced the inner token.
+      field('value', $.top_scalar),
+    ),
+
+    // `top_scalar` is a one-token whole-line scalar used at the
+    // document root for spec § 5.0.1's bare-scalar Array-item
+    // case. The token swallows the trailing newline, which makes
+    // it strictly longer than the `_key_segment` token a pair
+    // would emit (`_key_segment` stops at the first `:` / `\n` /
+    // structural byte). Two consequences:
+    //
+    //   1. On a colon-free line such as `foo\n`, the whole-line
+    //      `_top_scalar_text` token (length 4) wins the lexer's
+    //      longest-match against `_key_segment` (length 3) — so
+    //      the parser commits to the top-level Array-item path,
+    //      not the always-ERROR pair-without-separator path.
+    //   2. On a pair-shaped line such as `name: Russia\n`, the
+    //      `_top_scalar_text` regex CANNOT match (it forbids
+    //      `:`), so `_key_segment` is the only viable token at
+    //      line-start and the parser correctly enters
+    //      `object_pair` (spec § 5.0.1 step 2).
+    top_scalar: $ => $._top_scalar_text,
+    _top_scalar_text: $ => token(/[^\s:\r\n][^:\r\n]*\r?\n/),
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(

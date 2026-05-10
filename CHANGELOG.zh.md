@@ -10,6 +10,64 @@
 
 **语言：** [English](CHANGELOG.md) · [Русский](CHANGELOG.ru.md) · **简体中文**
 
+## [0.3.0] — 2026-05-10
+
+规范同步：跟进 **Ktav 0.1.1**（顶层 Array 检测，§ 5.0.1，纯增量
+变更）。语法现在接受根为数组项序列的文档 —— 裸标量、类型化标记项
+（`:: …` / `:i …` / `:f …`）、独立的 `{` / `[` 开启、多行开启
+（`(` / `((`）、关键字以及内联空复合体 —— 与之前只接受键-值对的
+位置一致。
+
+根处形如「键-值对」的行仍按 `object_pair` 解析（规范 § 5.0.1
+第 2 步）：包含冒号的行是键值对，而非顶层 Array 项。如需把根处
+含冒号的标量强制识别为数组项，请使用 raw 标记
+（`:: host: localhost`）。
+
+### 新增
+
+- 新顶层节点 **`top_array_item`**：结构上是 `array_item` 的
+  兄弟，但仅在文档根部发射（`[…]` 内部仍使用既有的
+  `array_item`）。形态：`marker?: <sep_*>`、`value: <…>`。
+  其裸标量分支产生新节点 **`top_scalar`**，与对内 `scalar`
+  区分开，便于使用方一眼识别顶层数组元素与键-值对的值。
+- 新增语料文件 **`test/corpus/top_level_array.txt`**，覆盖
+  九个用例：裸标量、类型化/raw 标记、嵌套对象、嵌套数组、
+  多行项、注释与空行夹杂、根处「键-值对优先」规则、顶层关键字
+  与顶层空内联复合体。
+- `tests/conformance.rs` 一致性套件自动接入 spec 子模块新增
+  的 `valid/top_level_array/**` 样例（六个文件）；全部通过。
+
+### 变更
+
+- **`grammar.js`**：
+  - 顶层重复单元 `_line` 现在除了 `object_pair` 还会分支到
+    `top_array_item`。
+  - `comment` 现以单 token 整行捕获（`#[^\r\n]*\r?\n`），
+    带 `prec(1)`。此前为
+    `seq('#', optional(/[^\r\n]*/), $._newline)` 的三段拼接。
+    单 token 形式是为了在词法器最长匹配阶段令注释胜过新
+    引入的整行 `_top_scalar_text` token。`(comment)` 的 AST
+    形态不变。
+  - 新 token `_top_scalar_text` 故意覆盖**整行包括末尾换
+    行**。这令其在不含冒号的行上严格长于 `_key_segment`
+    （后者在任意结构字节处停止），从而词法器在 `foo\n` 上
+    选择顶层 Array 项分支，而非永远失败的「无分隔符的键-值对」
+    分支。在含冒号的行上，正则完全无法匹配（排除 `:`），故
+    `_key_segment` 是唯一可行 token，解析器正确进入
+    `object_pair`。
+- spec 子模块前进到 `7256816`（`spec 0.1.1: top-level Array
+  support`）。
+
+### 兼容性
+
+- 现存的顶层 Object 文档与 0.2.x 在 AST 形态上**完全一致**。
+  没有删除节点、没有重命名字段、也不会对此前合法的输入引入
+  解析错误。
+- 遍历 `source_file` 子节点的使用方现在还需要处理
+  `top_array_item`（除 `comment`、`blank_line`、
+  `object_pair` 之外）。`queries/*.scm` 中的 highlights、
+  locals、injections 查询未受影响。
+
 ## [0.2.1] — 2026-05-01
 
 缺陷修复版本。conformance 测试套件中此前两个失败的 valid 用例现已

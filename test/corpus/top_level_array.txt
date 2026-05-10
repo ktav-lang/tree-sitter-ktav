@@ -1,0 +1,229 @@
+==================
+Top-level Array — bare scalars (spec 0.1.1, § 5.0.1)
+==================
+foo
+bar
+baz
+
+---
+
+(source_file
+  (top_array_item
+    value: (top_scalar))
+  (top_array_item
+    value: (top_scalar))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+Top-level Array — typed and raw markers
+==================
+:i 1
+:i 2
+:f 3.14
+:: literal-with-special-(chars)
+plain-string
+
+---
+
+(source_file
+  (top_array_item
+    marker: (sep_int)
+    value: (scalar))
+  (top_array_item
+    marker: (sep_int)
+    value: (scalar))
+  (top_array_item
+    marker: (sep_float)
+    value: (scalar))
+  (top_array_item
+    marker: (sep_raw)
+    value: (scalar))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+Top-level Array — nested objects
+==================
+{
+    name: alice
+    port:i 8080
+}
+{
+    name: bob
+    port:i 9090
+}
+
+---
+
+(source_file
+  (top_array_item
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_int)
+        value: (scalar))
+      (close_brace)))
+  (top_array_item
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_int)
+        value: (scalar))
+      (close_brace))))
+
+==================
+Top-level Array — nested arrays
+==================
+[
+    a
+    b
+]
+[
+    c
+    d
+]
+
+---
+
+(source_file
+  (top_array_item
+    value: (compound_array
+      (open_bracket)
+      (array_item
+        value: (scalar))
+      (array_item
+        value: (scalar))
+      (close_bracket)))
+  (top_array_item
+    value: (compound_array
+      (open_bracket)
+      (array_item
+        value: (scalar))
+      (array_item
+        value: (scalar))
+      (close_bracket))))
+
+==================
+Top-level Array — multi-line items
+==================
+(
+    line one
+    line two
+)
+((
+indented preserved
+    really
+))
+plain-end
+
+---
+
+(source_file
+  (top_array_item
+    value: (multiline_stripped
+      (open_paren)
+      (multiline_content_line)
+      (multiline_content_line)
+      (close_paren)))
+  (top_array_item
+    value: (multiline_verbatim
+      (open_dparen)
+      (multiline_content_line)
+      (multiline_content_line)
+      (close_dparen)))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+Top-level Array — comments and blanks around items
+==================
+# top-level array, comments and blanks allowed before/around items
+
+foo
+
+# inline comment between items
+bar
+baz
+
+---
+
+(source_file
+  (comment)
+  (blank_line)
+  (top_array_item
+    value: (top_scalar))
+  (blank_line)
+  (comment)
+  (top_array_item
+    value: (top_scalar))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+Pair-shaped line at root stays an Object pair (§ 5.0.1 step 2)
+==================
+host: localhost
+port:i 8080
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_int)
+    value: (scalar)))
+
+==================
+Top-level keyword item (true / false / null)
+==================
+true
+false
+null
+
+---
+
+(source_file
+  (top_array_item
+    value: (keyword
+      (kw_true)))
+  (top_array_item
+    value: (keyword
+      (kw_false)))
+  (top_array_item
+    value: (keyword
+      (kw_null))))
+
+==================
+Top-level empty inline compounds
+==================
+{}
+[]
+()
+(())
+
+---
+
+(source_file
+  (top_array_item
+    value: (empty_object))
+  (top_array_item
+    value: (empty_array))
+  (top_array_item
+    value: (empty_paren))
+  (top_array_item
+    value: (empty_double_paren)))
