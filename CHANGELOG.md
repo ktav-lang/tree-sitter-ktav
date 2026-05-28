@@ -11,6 +11,84 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.5.0] — 2026-05-27
+
+Spec sync: tracks **Ktav 0.5.0** — a breaking revision of the
+format. All changes below correspond to spec delta items listed in
+spec 0.5.0 § 1 "Introduction".
+
+### Breaking changes
+
+- **Comment marker: `#` → `##`.**  The `comment` rule now matches
+  `/##[^\r\n]*\r?\n/`. A single `#` byte is ordinary content and no
+  longer opens a comment; it is valid in keys and scalar values.
+  All comment corpus tests updated.
+
+- **Typed markers removed: `:i` and `:f` no longer exist.**  The
+  `sep_int` and `sep_float` node kinds are removed from the grammar.
+  The only pair separators are now `:` (`sep_string`) and `::` (`sep_raw`).
+  `array_item` no longer accepts `:i`/`:f` marker branches.
+  Any document that previously used `:i`/`:f` must migrate to a bare
+  `:` pair (the spec now infers the type from the scalar's lexical
+  form — see number literals below).
+
+### Added
+
+- **Inline compounds** (`inline_object`, `inline_array`).
+  `{key: val, key2: val2}` and `[v1, v2, v3]` are now valid as a
+  pair value or as an array item. Trailing commas are allowed.
+  Nesting (`{a: {b: c}}`, `[[1, 2], [3]]`) is supported.
+  New corpus file **`test/corpus/inline_compounds.txt`** with four
+  test cases.
+
+- **Escape sequences** (`escape_sequence`) inside inline scalars.
+  The eight sequences defined in spec § 3.7 (`\\`, `\,`, `\}`, `\]`,
+  `\{`, `\[`, `\n`, `\r`) are recognised as distinct AST nodes inside
+  `inline_scalar` values. New corpus file
+  **`test/corpus/escape_sequences.txt`**.
+
+- **Number literals** (`integer`, `float`).  Pure-number lines are
+  now captured as distinct node kinds rather than generic `scalar`,
+  enabling distinct syntax highlighting without post-processing.
+  Integer: decimal, hex (`0x`), octal (`0o`), binary (`0b`), all
+  with optional underscore separators. Float: decimal-point form and
+  exponent-only form.  New corpus file
+  **`test/corpus/number_literals.txt`** with four test cases.
+
+- **`raw_scalar` node kind** for the body of `::` pairs and `::` array
+  items. Unlike `scalar`, `raw_scalar` allows any non-whitespace byte
+  at the start of the value (including `(`, `{`, `[`), preserving spec
+  § 5.2's guarantee that the raw marker body is never dispatched as a
+  compound opener.
+
+### Changed
+
+- `grammar.js` rewritten for 0.5.0 syntax; `src/parser.c` and
+  `src/grammar.json` regenerated with `npx tree-sitter generate`.
+- `queries/highlights.scm`: removed captures for `sep_int`, `sep_float`;
+  added `(integer) @number`, `(float) @number.float`,
+  `(escape_sequence) @string.escape`, and inline-compound captures.
+- `_scalar_text` (the backing regex for `scalar`) now excludes `{`, `[`,
+  `(` at position 0. Lines that start with those bytes are always handled
+  by the structural or inline-compound rules.
+- `_key_segment` now also excludes `(` and `)` (they are structural in
+  0.5.0 inline compound contexts).
+- Spec submodule advanced to tag `v0.5.0`
+  (commit `4d0a8aa — Ktav Specification 0.5.0`).
+- License changed to **MIT OR Apache-2.0** (dual). `LICENSE-MIT` and
+  `LICENSE-APACHE` added; `package.json` and `Cargo.toml` updated.
+
+### Compatibility
+
+- **Breaking AST changes** (consumers must update):
+  - `sep_int`, `sep_float` node kinds no longer exist.
+  - `scalar` is no longer emitted after `::` (raw marker) — `raw_scalar`
+    is emitted instead.
+  - Pure integer/float lines now produce `integer`/`float` nodes instead
+    of `scalar`.
+  - `comment` tokens now require `##` prefix; single-`#` lines parse as
+    scalars or pair values.
+
 ## [0.3.0] — 2026-05-10
 
 Spec sync: tracks **Ktav 0.1.1** (top-level Array detection,

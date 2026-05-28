@@ -1,9 +1,9 @@
 ==================
-Line comments
+Line comments (double-hash, spec 0.5.0)
 ==================
-# top-level comment
+## top-level comment
 port: 8080
-# another comment
+## another comment
 host: localhost
 
 ---
@@ -13,7 +13,7 @@ host: localhost
   (object_pair
     key: (key)
     separator: (sep_string)
-    value: (scalar))
+    value: (integer))
   (comment)
   (object_pair
     key: (key)
@@ -21,7 +21,7 @@ host: localhost
     value: (scalar)))
 
 ==================
-Hash inside value is content not comment
+Single hash inside value is content (spec 0.5.0)
 ==================
 color: #ff00ff
 url: http://x/#frag
@@ -34,6 +34,24 @@ tag: a#b
     key: (key)
     separator: (sep_string)
     value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+Double hash inside value is content (not a comment)
+==================
+note: see ##section-3 for details
+hash: a##b
+
+---
+
+(source_file
   (object_pair
     key: (key)
     separator: (sep_string)

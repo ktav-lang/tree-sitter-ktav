@@ -1,17 +1,17 @@
 ==================
-Realistic mixed config
+Realistic mixed config (spec 0.5.0)
 ==================
-# server config
+## server config
 service: web
-port:i 8080
-ratio:f 0.75
+port: 8080
+ratio: 0.75
 tls: true
 tags: [
     prod
     eu-west-1
 ]
 db.host: primary.internal
-db.timeout:i 30
+db.timeout: 30
 banner: ((
 welcome
 to the service
@@ -27,12 +27,12 @@ to the service
     value: (scalar))
   (object_pair
     key: (key)
-    separator: (sep_int)
-    value: (scalar))
+    separator: (sep_string)
+    value: (integer))
   (object_pair
     key: (key)
-    separator: (sep_float)
-    value: (scalar))
+    separator: (sep_string)
+    value: (float))
   (object_pair
     key: (key)
     separator: (sep_string)
@@ -56,8 +56,8 @@ to the service
   (object_pair
     key: (key
       (dotted_key))
-    separator: (sep_int)
-    value: (scalar))
+    separator: (sep_string)
+    value: (integer))
   (object_pair
     key: (key)
     separator: (sep_string)

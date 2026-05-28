@@ -1,9 +1,9 @@
 [package]
 name        = "tree-sitter-ktav"
-version     = "0.3.0"
+version     = "0.5.0"
 edition     = "2021"
 authors     = ["Marat K <phpcraftdream@gmail.com>"]
-license     = "MIT"
+license     = "MIT OR Apache-2.0"
 description = "Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format"
 readme      = "README.md"
 homepage    = "https://github.com/ktav-lang/tree-sitter-ktav"
@@ -17,6 +17,8 @@ include     = [
     "queries/*",
     "src/*",
     "LICENSE",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
     "README.md",
 ]
 

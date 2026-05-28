@@ -15,7 +15,7 @@ path: /etc/hosts
   (object_pair
     key: (key)
     separator: (sep_string)
-    value: (scalar))
+    value: (integer))
   (object_pair
     key: (key)
     separator: (sep_string)

@@ -1,5 +1,5 @@
 ==================
-Top-level Array — bare scalars (spec 0.1.1, § 5.0.1)
+Top-level Array — bare scalars (spec 0.5.0, § 5.0.1)
 ==================
 foo
 bar
@@ -16,29 +16,21 @@ baz
     value: (top_scalar)))
 
 ==================
-Top-level Array — typed and raw markers
+Top-level Array — raw markers only (spec 0.5.0 — :i/:f removed)
 ==================
-:i 1
-:i 2
-:f 3.14
 :: literal-with-special-(chars)
+:: another::raw
 plain-string
 
 ---
 
 (source_file
   (top_array_item
-    marker: (sep_int)
-    value: (scalar))
-  (top_array_item
-    marker: (sep_int)
-    value: (scalar))
-  (top_array_item
-    marker: (sep_float)
-    value: (scalar))
+    marker: (sep_raw)
+    value: (raw_scalar))
   (top_array_item
     marker: (sep_raw)
-    value: (scalar))
+    value: (raw_scalar))
   (top_array_item
     value: (top_scalar)))
 
@@ -47,11 +39,11 @@ Top-level Array — nested objects
 ==================
 {
     name: alice
-    port:i 8080
+    port: 8080
 }
 {
     name: bob
-    port:i 9090
+    port: 9090
 }
 
 ---
@@ -66,8 +58,8 @@ Top-level Array — nested objects
         value: (scalar))
       (object_pair
         key: (key)
-        separator: (sep_int)
-        value: (scalar))
+        separator: (sep_string)
+        value: (integer))
       (close_brace)))
   (top_array_item
     value: (compound_object
@@ -78,8 +70,8 @@ Top-level Array — nested objects
         value: (scalar))
       (object_pair
         key: (key)
-        separator: (sep_int)
-        value: (scalar))
+        separator: (sep_string)
+        value: (integer))
       (close_brace))))
 
 ==================
@@ -148,11 +140,11 @@ plain-end
 ==================
 Top-level Array — comments and blanks around items
 ==================
-# top-level array, comments and blanks allowed before/around items
+## top-level array, comments and blanks allowed before/around items
 
 foo
 
-# inline comment between items
+## inline comment between items
 bar
 baz
 
@@ -174,7 +166,7 @@ baz
 Pair-shaped line at root stays an Object pair (§ 5.0.1 step 2)
 ==================
 host: localhost
-port:i 8080
+port: 8080
 
 ---
 
@@ -185,8 +177,8 @@ port:i 8080
     value: (scalar))
   (object_pair
     key: (key)
-    separator: (sep_int)
-    value: (scalar)))
+    separator: (sep_string)
+    value: (integer)))
 
 ==================
 Top-level keyword item (true / false / null)

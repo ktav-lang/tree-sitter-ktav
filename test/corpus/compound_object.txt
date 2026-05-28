@@ -21,7 +21,7 @@ server: {
       (object_pair
         key: (key)
         separator: (sep_string)
-        value: (scalar))
+        value: (integer))
       (close_brace))))
 
 ==================
@@ -49,7 +49,7 @@ outer: {
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar))
+            value: (integer))
           (close_brace)))
       (close_brace))))
 

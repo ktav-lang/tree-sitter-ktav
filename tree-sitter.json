@@ -10,8 +10,8 @@
     }
   ],
   "metadata": {
-    "version": "0.3.0",
-    "license": "MIT",
+    "version": "0.5.0",
+    "license": "MIT OR Apache-2.0",
     "description": "Tree-sitter grammar for Ktav (כְּתָב), the Written Configuration Format",
     "authors": [
       {

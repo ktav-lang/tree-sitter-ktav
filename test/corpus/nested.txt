@@ -30,7 +30,7 @@ upstreams: [
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar))
+            value: (integer))
           (close_brace)))
       (array_item
         value: (compound_object
@@ -42,7 +42,7 @@ upstreams: [
           (object_pair
             key: (key)
             separator: (sep_string)
-            value: (scalar))
+            value: (integer))
           (close_brace)))
       (close_bracket))))
 

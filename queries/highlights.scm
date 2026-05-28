@@ -14,8 +14,6 @@
 ; ---- Pair separators ----
 (sep_string) @punctuation.delimiter
 (sep_raw)    @punctuation.special
-(sep_int)    @punctuation.special
-(sep_float)  @punctuation.special
 
 ; ---- Compound brackets ----
 ; The structural openers / closers each form their own visible token
@@ -43,9 +41,12 @@
 (kw_true)  @constant.builtin.boolean
 (kw_false) @constant.builtin.boolean
 
+; ---- Number literals (new in spec 0.5.0) ----
+(integer) @number
+(float)   @number.float
+
 ; ---- String values ----
-; Plain scalar after `:` — usually a string. (Numeric coercion happens
-; only after `:i`/`:f`; see below.)
+; Plain scalar after `:` — a string.
 (object_pair
   separator: (sep_string)
   value: (scalar) @string)
@@ -53,32 +54,21 @@
 ; Raw string after `::`
 (object_pair
   separator: (sep_raw)
-  value: (scalar) @string.special)
-
-; Typed integer / float bodies
-(object_pair
-  separator: (sep_int)
-  value: (scalar) @number)
-
-(object_pair
-  separator: (sep_float)
-  value: (scalar) @number.float)
+  value: (raw_scalar) @string.special)
 
 ; ---- Array items ----
 (array_item
   marker: (sep_raw)
-  value: (scalar) @string.special)
-
-(array_item
-  marker: (sep_int)
-  value: (scalar) @number)
-
-(array_item
-  marker: (sep_float)
-  value: (scalar) @number.float)
+  value: (raw_scalar) @string.special)
 
 (array_item
   value: (scalar) @string)
+
+; ---- Inline compounds (new in spec 0.5.0) ----
+(inline_object) @punctuation.bracket
+(inline_array)  @punctuation.bracket
+(inline_scalar) @string
+(escape_sequence) @string.escape
 
 ; ---- Multi-line strings ----
 (multiline_stripped) @string

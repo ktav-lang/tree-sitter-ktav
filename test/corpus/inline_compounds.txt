@@ -1,0 +1,93 @@
+==================
+Inline object as pair value (spec 0.5.0)
+==================
+point: {x: 1, y: 2}
+empty: {}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar)))
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar)))))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_object)))
+
+==================
+Inline array as pair value (spec 0.5.0)
+==================
+tags: [prod, eu-west-1, staging]
+empty: []
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (empty_array)))
+
+==================
+Inline array with trailing comma (spec 0.5.0)
+==================
+nums: [1, 2, 3,]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar)))))
+
+==================
+Inline object with raw separator
+==================
+meta: {id:: raw-id, name: alice}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_raw)
+        value: (inline_value
+          (inline_scalar)))
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar))))))

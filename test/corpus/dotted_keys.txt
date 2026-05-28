@@ -18,7 +18,7 @@ deeply.nested.path.value: hi
     key: (key
       (dotted_key))
     separator: (sep_string)
-    value: (scalar))
+    value: (integer))
   (object_pair
     key: (key
       (dotted_key))

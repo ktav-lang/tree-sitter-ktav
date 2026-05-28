@@ -24,13 +24,13 @@ items: [
       (close_bracket))))
 
 ==================
-Array with marker items
+Array with marker items (spec 0.5.0 — only :: marker)
 ==================
 mixed: [
     plain
     :: literal
-    :i 42
-    :f 3.14
+    42
+    3.14
     true
     null
 ]
@@ -47,13 +47,11 @@ mixed: [
         value: (scalar))
       (array_item
         marker: (sep_raw)
-        value: (scalar))
+        value: (raw_scalar))
       (array_item
-        marker: (sep_int)
-        value: (scalar))
+        value: (integer))
       (array_item
-        marker: (sep_float)
-        value: (scalar))
+        value: (float))
       (array_item
         value: (keyword
           (kw_true)))

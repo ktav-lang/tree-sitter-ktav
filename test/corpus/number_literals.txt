@@ -1,0 +1,91 @@
+==================
+Decimal integer
+==================
+port: 8080
+count: 0
+neg: -42
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Decimal integer with underscore separators
+==================
+big: 1_000_000
+hex: 0xFF_00
+oct: 0o77_77
+bin: 0b1010_0101
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Float with decimal point
+==================
+ratio: 0.5
+neg: -1.5
+big: 1_000.25
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (float))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (float))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (float)))
+
+==================
+Float with exponent
+==================
+eps: 1e-10
+large: 1.5E+3
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (float))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (float)))

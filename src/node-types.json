@@ -8,14 +8,6 @@
         "required": false,
         "types": [
           {
-            "type": "sep_float",
-            "named": true
-          },
-          {
-            "type": "sep_int",
-            "named": true
-          },
-          {
             "type": "sep_raw",
             "named": true
           }
@@ -54,6 +46,22 @@
             "named": true
           },
           {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "inline_array",
+            "named": true
+          },
+          {
+            "type": "inline_object",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
             "type": "keyword",
             "named": true
           },
@@ -63,6 +71,10 @@
           },
           {
             "type": "multiline_verbatim",
+            "named": true
+          },
+          {
+            "type": "raw_scalar",
             "named": true
           },
           {
@@ -191,6 +203,114 @@
     "fields": {}
   },
   {
+    "type": "inline_array",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "inline_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inline_object",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "inline_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inline_pair",
+    "named": true,
+    "fields": {
+      "key": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "key",
+            "named": true
+          }
+        ]
+      },
+      "separator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "sep_raw",
+            "named": true
+          },
+          {
+            "type": "sep_string",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "inline_value",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "inline_scalar",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inline_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "inline_scalar",
+          "named": true
+        },
+        {
+          "type": "nested_inline_array",
+          "named": true
+        },
+        {
+          "type": "nested_inline_object",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "key",
     "named": true,
     "fields": {},
@@ -275,6 +395,36 @@
     }
   },
   {
+    "type": "nested_inline_array",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "inline_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nested_inline_object",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "inline_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "object_pair",
     "named": true,
     "fields": {
@@ -292,14 +442,6 @@
         "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": "sep_float",
-            "named": true
-          },
-          {
-            "type": "sep_int",
-            "named": true
-          },
           {
             "type": "sep_raw",
             "named": true
@@ -343,6 +485,22 @@
             "named": true
           },
           {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "inline_array",
+            "named": true
+          },
+          {
+            "type": "inline_object",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
             "type": "keyword",
             "named": true
           },
@@ -355,12 +513,21 @@
             "named": true
           },
           {
+            "type": "raw_scalar",
+            "named": true
+          },
+          {
             "type": "scalar",
             "named": true
           }
         ]
       }
     }
+  },
+  {
+    "type": "raw_scalar",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "scalar",
@@ -404,14 +571,6 @@
         "required": false,
         "types": [
           {
-            "type": "sep_float",
-            "named": true
-          },
-          {
-            "type": "sep_int",
-            "named": true
-          },
-          {
             "type": "sep_raw",
             "named": true
           }
@@ -450,6 +609,22 @@
             "named": true
           },
           {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "inline_array",
+            "named": true
+          },
+          {
+            "type": "inline_object",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
             "type": "keyword",
             "named": true
           },
@@ -462,7 +637,7 @@
             "named": true
           },
           {
-            "type": "scalar",
+            "type": "raw_scalar",
             "named": true
           },
           {
@@ -487,7 +662,15 @@
     "named": false
   },
   {
+    "type": ",",
+    "named": false
+  },
+  {
     "type": ".",
+    "named": false
+  },
+  {
+    "type": "[",
     "named": false
   },
   {
@@ -500,6 +683,18 @@
   },
   {
     "type": "comment",
+    "named": true
+  },
+  {
+    "type": "escape_sequence",
+    "named": true
+  },
+  {
+    "type": "float",
+    "named": true
+  },
+  {
+    "type": "integer",
     "named": true
   },
   {
@@ -535,20 +730,16 @@
     "named": true
   },
   {
-    "type": "sep_float",
-    "named": true
-  },
-  {
-    "type": "sep_int",
-    "named": true
-  },
-  {
     "type": "sep_raw",
     "named": true
   },
   {
     "type": "sep_string",
     "named": true
+  },
+  {
+    "type": "{",
+    "named": false
   },
   {
     "type": "{}",

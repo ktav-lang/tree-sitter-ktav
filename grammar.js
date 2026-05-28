@@ -1,24 +1,36 @@
 /**
  * Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
  *
- * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.1/spec.md
+ * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.5/spec.md
  *
  * Ktav is line-oriented. Every line is one of:
  *   - blank
- *   - a comment (`# ...`)
- *   - a key:value pair (with markers `:`, `::`, `:i`, `:f`)
+ *   - a comment (`## ...`)  ← NOTE: double-hash in 0.5.0; single `#` is content
+ *   - a key:value pair (with markers `:` or `::`)
  *   - a structural opener / closer for compounds (`{`, `}`, `[`, `]`,
  *     `(`, `((`, `)`, `))`)
- *   - an array item (inside an open `[` array)
+ *   - an array item (inside an open `[` array, or at the top level)
  *   - raw content of a multi-line string
+ *
+ * Changes from 0.3.0 (spec 0.1.1) to 0.5.0:
+ *   - Comment marker changed from `#` to `##`. Single `#` is now a
+ *     content byte (allowed in keys and scalar values).
+ *   - Typed markers `:i` and `:f` removed. Only `:` and `::` remain.
+ *   - Inline compounds: `{key: value, ...}` and `[v1, v2, ...]` are
+ *     now valid as pair values or array items (inline_object /
+ *     inline_array rules).
+ *   - Number literals: hex (`0x`), octal (`0o`), binary (`0b`), decimal
+ *     with underscore separators, and floats with `.` or exponent.
+ *     These are captured as distinct node kinds for highlighting.
+ *   - Escape sequences inside inline scalars: `\\`, `\,`, `\}`, `\]`,
+ *     `\{`, `\[`, `\n`, `\r`.
  *
  * Strategy:
  *   - Newlines are explicit (`_newline`) and structural openers/closers
  *     are tokens that include the trailing whitespace + newline so they
  *     can NEVER be confused with a scalar starting with the same byte.
- *   - The four pair separators (`:`, `::`, `:i`, `:f`) are recognized
- *     by the lexer with longest-match precedence (`::` > `:`, `:i`/`:f`
- *     > `:`).
+ *   - The two pair separators (`:`, `::`) are recognized by the lexer
+ *     with longest-match precedence (`::` > `:`).
  *   - The mandatory-whitespace-after-marker rule (§ 6.10) is enforced
  *     by an external scanner token `_marker_ws`, which is a zero-width
  *     assertion that only succeeds when the byte right after the
@@ -31,6 +43,8 @@
  *     a parse error.
  *   - Multi-line string content is captured as a sequence of opaque
  *     "raw lines" up to the matching terminator.
+ *   - Inline compound values are fully parsed; escape sequences inside
+ *     inline scalars are captured as `escape_sequence` nodes.
  *   - Indentation is not significant (matches the spec).
  */
 
@@ -56,29 +70,12 @@ module.exports = grammar({
 
   rules: {
     // The top-level document is a sequence of lines. Per spec § 5.0.1
-    // (added in spec 0.1.1) the root may be either an Object (the
-    // historical default — every content line is a pair) or an Array
-    // (every content line is an array item). Tree-sitter is a generic
-    // parser of trees: rather than encode the spec's "first content
-    // line decides" rule structurally, we accept either kind of line
-    // anywhere at the top level. The reference parser performs the
-    // semantic § 5.0.1 dispatch and rejects mixed roots; the grammar's
-    // job here is only to produce a clean syntax tree for both shapes
-    // (and for editors / LSPs) without spurious ERROR nodes on bare
-    // top-level scalars or `:i`/`:f`/`::` lines.
+    // the root may be either an Object or an Array. Tree-sitter accepts
+    // both kinds of line anywhere; semantic dispatch is left to the
+    // reference parser.
     source_file: $ => repeat($._line),
 
     // ---- Top-level lines ----
-    //
-    // `top_array_item` covers the top-level Array case (§ 5.0.1): a
-    // bare scalar, a typed-marker item (`:: …`, `:i …`, `:f …`), a
-    // lone `{` / `[` opener, or a `(` / `((` multi-line opener. It
-    // is structurally identical to `array_item` (used inside `[ ]`)
-    // but is kept as a distinct rule so we can apply a lexer-level
-    // disambiguation: a line that classifies as a pair (§ 5.3) must
-    // remain a pair at the top level (spec § 5.0.1 step 2), so
-    // `top_array_item`'s plain bare-scalar branch is given lower
-    // precedence than `object_pair` via `prec.dynamic`.
     _line: $ => choice(
       $.comment,
       $.blank_line,
@@ -92,27 +89,25 @@ module.exports = grammar({
 
     // ---- Comment ----
     //
-    // Captured as a single whole-line token so it is the
-    // unambiguous longest match at line start when the line
-    // begins with `#`. Without this, `_top_scalar_text` (also a
-    // whole-line token) would tie or beat a structurally-defined
-    // comment that's split into `'#'` + tail + newline pieces.
-    comment: $ => token(prec(1, /#[^\r\n]*\r?\n/)),
+    // In spec 0.5.0 a comment starts with `##` (two hashes). A single
+    // `#` is ordinary content. The token captures the whole line
+    // including the trailing newline to beat `_top_scalar_text` at the
+    // lexer's longest-match step.
+    comment: $ => token(prec(1, /##[^\r\n]*\r?\n/)),
 
     // ---- Object pair ----
     //
     // After the separator, the external `_marker_ws` token asserts
-    // that the next byte is whitespace, CR, LF, or EOF. This enforces
-    // § 6.10 (mandatory whitespace after marker): `key:value` fails.
+    // that the next byte is whitespace, CR, LF, or EOF (§ 6.10).
     object_pair: $ => choice(
-      // After `::`, `:i`, `:f` the body is a literal/typed scalar — § 5.2:
-      // it is NOT dispatched through compound-opener / multi-line dispatch.
-      // Only `empty_value` (immediate newline) or `scalar` is allowed.
+      // After `::` the body is a literal scalar (NOT dispatched through
+      // compound-opener / multi-line dispatch). `raw_scalar` accepts any
+      // line content including `(`, `{`, `[`-starting text.
       seq(
         field('key', $.key),
-        field('separator', choice($.sep_raw, $.sep_int, $.sep_float)),
+        field('separator', $.sep_raw),
         $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
+        field('value', choice($.empty_value, $.raw_scalar)),
       ),
       // After `:` the body goes through the full § 5.2 dispatch.
       seq(
@@ -126,11 +121,8 @@ module.exports = grammar({
       ),
     ),
 
-    // Tree-sitter prefers longest token match. To make sure `::` wins
-    // over `:`, `::` is given higher precedence; same for `:i`/`:f`.
+    // `::` wins over `:` via higher precedence.
     sep_raw:    $ => token(prec(3, '::')),
-    sep_int:    $ => token(prec(2, ':i')),
-    sep_float:  $ => token(prec(2, ':f')),
     sep_string: $ => token(prec(1, ':')),
 
     // ---- Keys ----
@@ -144,9 +136,9 @@ module.exports = grammar({
       repeat1(seq('.', $._key_segment)),
     )),
 
-    // Key segment: any chars except whitespace, "[", "]", "{", "}",
-    // ":", "#", ".".
-    _key_segment: $ => /[^\s\[\]\{\}:#.\r\n]+/,
+    // Key segment: any chars except whitespace, "[", "]", "{", "}", "(", ")",
+    // ":", ",", ".". Note: "#" is now allowed in keys (spec 0.5.0 § 4).
+    _key_segment: $ => /[^\s\[\]\{\}\(\):#,.\r\n]+/,
 
     // ---- Value line ----
     _value_line: $ => choice(
@@ -160,8 +152,14 @@ module.exports = grammar({
       $.empty_array,
       $.empty_paren,
       $.empty_double_paren,
+      // Inline compounds (new in 0.5.0).
+      $.inline_object,
+      $.inline_array,
       // Keywords (single token followed by newline).
       $.keyword,
+      // Number literals (distinct nodes for highlighting).
+      $.integer,
+      $.float,
       // Scalar — catch-all line content.
       $.scalar,
     ),
@@ -176,25 +174,12 @@ module.exports = grammar({
     empty_double_paren: $ => seq(token(prec(5, '(())')), $._newline),
 
     // ---- Multi-line compounds ----
-    //
-    // Openers are tokens that include the rest of the line up to and
-    // including the newline, so they cannot be confused with a scalar
-    // starting with the same byte. Closers, by contrast, are split
-    // into the bracket character(s) plus the external `_strict_eol`
-    // token; this lets the scanner reject pathological lines like
-    // `}   trailing_text\n` (§ 5.6.1 and the cleanliness rule for
-    // object/array closers).
     open_brace:    $ => token(prec(4, /\{[ \t]*\r?\n/)),
     close_brace:   $ => seq(token(prec(4, '}')),    $._strict_eol),
     open_bracket:  $ => token(prec(4, /\[[ \t]*\r?\n/)),
     close_bracket: $ => seq(token(prec(4, ']')),    $._strict_eol),
     open_paren:    $ => token(prec(4, /\([ \t]*\r?\n/)),
     open_dparen:   $ => token(prec(5, /\(\([ \t]*\r?\n/)),
-    // close_paren / close_dparen are emitted by the external scanner as
-    // `_stripped_close` / `_verbatim_close`. They are context-sensitive:
-    // inside `(...)` only `)` closes (a `))` line is content); inside
-    // `((...))` only `))` closes (a single `)` line is content). The
-    // scanner consults `valid_symbols` to decide which form to attempt.
     close_paren:   $ => $._stripped_close,
     close_dparen:  $ => $._verbatim_close,
 
@@ -210,62 +195,105 @@ module.exports = grammar({
       $.close_bracket,
     ),
 
-    // ---- Array items ----
+    // ---- Inline compounds (new in spec 0.5.0) ----
     //
-    // Marker-prefixed items must, like pair lines, have whitespace or
-    // EOL after the marker (§ 6.10).
+    // `{key: value, key2: value2}` and `[v1, v2, v3]` are valid as a
+    // value on the right-hand side of a pair or as an array item.
+    // Trailing comma is allowed. Nesting is supported.
+    //
+    // These are followed by a newline (they consume the rest of the line).
+    inline_object: $ => seq(
+      '{',
+      optional($._inline_pair_list),
+      '}',
+      $._newline,
+    ),
+
+    inline_array: $ => seq(
+      '[',
+      optional($._inline_item_list),
+      ']',
+      $._newline,
+    ),
+
+    _inline_pair_list: $ => seq(
+      $.inline_pair,
+      repeat(seq(',', $.inline_pair)),
+      optional(','),
+    ),
+
+    inline_pair: $ => seq(
+      field('key', $.key),
+      field('separator', choice($.sep_raw, $.sep_string)),
+      field('value', $.inline_value),
+    ),
+
+    _inline_item_list: $ => seq(
+      $.inline_value,
+      repeat(seq(',', $.inline_value)),
+      optional(','),
+    ),
+
+    // An inline value is either a nested inline compound, or an inline
+    // scalar (which may contain escape sequences).
+    inline_value: $ => choice(
+      $.nested_inline_object,
+      $.nested_inline_array,
+      $.inline_scalar,
+    ),
+
+    nested_inline_object: $ => seq(
+      '{',
+      optional($._inline_pair_list),
+      '}',
+    ),
+
+    nested_inline_array: $ => seq(
+      '[',
+      optional($._inline_item_list),
+      ']',
+    ),
+
+    // An inline scalar is terminated by an unescaped `,`, `}`, or `]`.
+    // It may contain escape sequences (§ 3.7).
+    inline_scalar: $ => repeat1(choice(
+      $.escape_sequence,
+      $._inline_scalar_text,
+    )),
+
+    // Escape sequences recognised inside inline scalars (§ 3.7).
+    escape_sequence: $ => token(choice(
+      '\\\\',
+      '\\,',
+      '\\}',
+      '\\]',
+      '\\{',
+      '\\[',
+      '\\n',
+      '\\r',
+    )),
+
+    // Raw text inside an inline scalar: any char except `\`, `,`, `}`,
+    // `]`, CR, LF.
+    _inline_scalar_text: $ => /[^\\,\}\]\r\n]+/,
+
+    // ---- Array items ----
     array_item: $ => choice(
       seq(
         field('marker', $.sep_raw),
         $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
-      ),
-      seq(
-        field('marker', $.sep_int),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
-      ),
-      seq(
-        field('marker', $.sep_float),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
+        field('value', choice($.empty_value, $.raw_scalar)),
       ),
       // Plain value item — same set as object pair value.
       field('value', $._value_line),
     ),
 
-    // Top-level array item (§ 5.0.1, added in spec 0.1.1).
-    //
-    // Structurally a sibling of `array_item` (used inside `[ ]`),
-    // but with two differences that realise spec § 5.0.1 step 2:
-    //
-    // * The plain bare-scalar branch uses `_top_scalar_text`, a
-    //   token that disallows `:` anywhere in the line. This makes
-    //   any line containing a `:` (i.e. any pair-shaped line)
-    //   parseable ONLY as `object_pair`, never as a top-level
-    //   bare-scalar — which is what § 5.0.1 step 2 requires.
-    //   Per spec note: to force a colon-bearing scalar at the root
-    //   to be an Array item, use the raw marker (`:: foo: bar`).
-    //
-    // * Compound openers (`{`, `[`, `(`, `((`) and the empty-inline
-    //   compound forms (`{}` / `[]` / `()` / `(())`) and the
-    //   keywords are still allowed unchanged — they are
-    //   unambiguous lines that cannot be confused with a pair.
+    // Top-level array item (§ 5.0.1).
     top_array_item: $ => choice(
       seq(
         field('marker', $.sep_raw),
         $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
-      ),
-      seq(
-        field('marker', $.sep_int),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
-      ),
-      seq(
-        field('marker', $.sep_float),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.scalar)),
+        field('value', choice($.empty_value, $.raw_scalar)),
       ),
       field('value', $.compound_object),
       field('value', $.compound_array),
@@ -275,35 +303,18 @@ module.exports = grammar({
       field('value', $.empty_array),
       field('value', $.empty_paren),
       field('value', $.empty_double_paren),
+      field('value', $.inline_object),
+      field('value', $.inline_array),
       field('value', $.keyword),
-      // Bare-scalar branch — the line is captured as a `scalar`
-      // node whose text comes from the `_top_scalar_text` token
-      // (no `:` allowed). Wrapping in `top_scalar` keeps the AST
-      // tidy: tools see exactly the same `(scalar)` shape as
-      // elsewhere, with the only difference being which lexer
-      // rule produced the inner token.
+      field('value', $.integer),
+      field('value', $.float),
       field('value', $.top_scalar),
     ),
 
-    // `top_scalar` is a one-token whole-line scalar used at the
-    // document root for spec § 5.0.1's bare-scalar Array-item
-    // case. The token swallows the trailing newline, which makes
-    // it strictly longer than the `_key_segment` token a pair
-    // would emit (`_key_segment` stops at the first `:` / `\n` /
-    // structural byte). Two consequences:
-    //
-    //   1. On a colon-free line such as `foo\n`, the whole-line
-    //      `_top_scalar_text` token (length 4) wins the lexer's
-    //      longest-match against `_key_segment` (length 3) — so
-    //      the parser commits to the top-level Array-item path,
-    //      not the always-ERROR pair-without-separator path.
-    //   2. On a pair-shaped line such as `name: Russia\n`, the
-    //      `_top_scalar_text` regex CANNOT match (it forbids
-    //      `:`), so `_key_segment` is the only viable token at
-    //      line-start and the parser correctly enters
-    //      `object_pair` (spec § 5.0.1 step 2).
+    // `top_scalar` — bare-scalar at the document root. Forbids `:` so
+    // that pair-shaped lines always parse as `object_pair`.
     top_scalar: $ => $._top_scalar_text,
-    _top_scalar_text: $ => token(/[^\s:\r\n][^:\r\n]*\r?\n/),
+    _top_scalar_text: $ => token(/[^\s:\{\[\(\r\n][^:\r\n]*\r?\n/),
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(
@@ -318,11 +329,6 @@ module.exports = grammar({
       $.close_dparen,
     ),
 
-    // A content line inside a multi-line string. Captured as one
-    // token. The closer tokens (`)`, `))` plus _strict_eol) win at
-    // the LR(1) boundary because they require their own line; any
-    // line whose content includes more than just the terminator
-    // falls through to this rule.
     multiline_content_line: $ => token(prec(-1, /[^\r\n]*\r?\n/)),
 
     // ---- Scalar (default value body, until end of line) ----
@@ -331,12 +337,55 @@ module.exports = grammar({
       $._newline,
     ),
 
+    // `raw_scalar` is used exclusively after `::` (raw marker). It accepts
+    // any non-empty line content, including `(`, `{`, `[`-starting text.
+    // Per spec § 5.2: after `::` the body is NEVER dispatched as a
+    // compound opener or multi-line string opener — it is always a literal
+    // String value. This is a separate rule (not `scalar`) because
+    // `scalar`'s underlying `_scalar_text` deliberately excludes those
+    // opening bytes to avoid lexer ambiguity in the non-raw value context.
+    raw_scalar: $ => seq(
+      $._raw_scalar_text,
+      $._newline,
+    ),
+    _raw_scalar_text: $ => /[^\s\r\n][^\r\n]*/,
+
     // Scalar text: any non-whitespace, non-newline content up to end
-    // of line. `#` is allowed (`color: #ff00ff` is a valid value);
-    // the `#` only opens a comment when it is the first non-whitespace
-    // char of a line — tree-sitter's context-aware lexer disambiguates
-    // because `comment` is only valid at a line-start parse state.
-    _scalar_text: $ => /[^\s\r\n][^\r\n]*/,
+    // of line. Both `#` and `##` are allowed as content bytes in 0.5.0.
+    // Lines starting with `{` or `[` are always handled by structural
+    // rules (compound_object, compound_array, empty_object, empty_array,
+    // inline_object, inline_array), so `_scalar_text` explicitly excludes
+    // those opening bytes at position 0 to avoid the greedy-token
+    // ambiguity. Lines starting with `(` are handled by multiline or
+    // empty-paren rules likewise.
+    _scalar_text: $ => /[^\s\{\[\(\r\n][^\r\n]*/,
+
+    // ---- Number literals ----
+    //
+    // Captured as distinct node kinds so syntax highlighters can colour
+    // them differently from plain strings.
+    //
+    // IMPORTANT: These are whole-line tokens (pattern + optional
+    // horizontal whitespace + newline). Using a whole-line token (like
+    // `comment` and `_top_scalar_text`) avoids the ambiguity where the
+    // partial integer token `1` wins over the scalar token `1:2:3` via
+    // prec — with a whole-line token the match for `1:2:3\n` is length
+    // 5 for scalar and no match for integer (`:` breaks the pattern),
+    // so scalar correctly wins on non-numeric lines.
+    //
+    // Float must be tested before integer because the float pattern
+    // (decimal point form) is a strict superset of the integer pattern
+    // prefix. Float is given prec(3) so it beats integer on `1.5\n`.
+    //
+    // Integer forms (§ 3.6): hex, octal, binary, decimal with underscores.
+    integer: $ => token(prec(2,
+      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|[0-9]([_]?[0-9])*)[ \t]*\r?\n/
+    )),
+
+    // Float forms (§ 3.6): decimal-point form or exponent-only form.
+    float: $ => token(prec(3,
+      /([+-]?[0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?[0-9]([_]?[0-9])*[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*\r?\n/
+    )),
 
     // ---- Keywords ----
     keyword: $ => seq(

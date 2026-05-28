@@ -1,0 +1,34 @@
+==================
+Escape sequences inside inline scalar (spec 0.5.0)
+==================
+tags: [a\,b, c\}d]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar
+          (escape_sequence)))
+      (inline_value
+        (inline_scalar
+          (escape_sequence))))))
+
+==================
+Backslash escape in inline scalar
+==================
+path: [C\\Users]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar
+          (escape_sequence))))))

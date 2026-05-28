@@ -23,36 +23,10 @@ pattern::[a-z]+
     (key)))
 
 ==================
-§ 6.10: typed-int marker glued to digits is rejected
-:error
-==================
-port:i42
-
----
-
-(source_file
-  (ERROR
-    (key)))
-
-==================
-§ 6.10: typed-float marker glued to digits is rejected
-:error
-==================
-ratio:f0.5
-
----
-
-(source_file
-  (ERROR
-    (key)))
-
-==================
-§ 6.10: empty body after each marker is allowed
+§ 6.10: empty body after each marker is allowed (spec 0.5.0 — only : and ::)
 ==================
 a:
 b::
-c:i
-d:f
 
 ---
 
@@ -64,14 +38,6 @@ d:f
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (empty_value))
-  (object_pair
-    key: (key)
-    separator: (sep_int)
-    value: (empty_value))
-  (object_pair
-    key: (key)
-    separator: (sep_float)
     value: (empty_value)))
 
 ==================
@@ -79,8 +45,6 @@ d:f
 ==================
 a:  v1
 b::  v2
-c:i  42
-d:f  1.5
 
 ---
 
@@ -92,15 +56,7 @@ d:f  1.5
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar))
-  (object_pair
-    key: (key)
-    separator: (sep_int)
-    value: (scalar))
-  (object_pair
-    key: (key)
-    separator: (sep_float)
-    value: (scalar)))
+    value: (raw_scalar)))
 
 ==================
 § 5.6.1: trailing non-whitespace after closer is rejected
@@ -143,10 +99,10 @@ o: {
       (close_brace))))
 
 ==================
-Nested compounds with comments and blank lines
+Nested compounds with comments and blank lines (## in 0.5.0)
 ==================
 root: {
-  # a comment in the middle
+  ## a comment in the middle
   inner: [
 
     a
@@ -228,19 +184,19 @@ d:: (())
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar))
+    value: (raw_scalar))
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar))
+    value: (raw_scalar))
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar))
+    value: (raw_scalar))
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar)))
+    value: (raw_scalar)))
 
 ==================
 Stripped multiline contains `))` as content

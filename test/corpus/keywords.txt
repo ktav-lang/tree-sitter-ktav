@@ -33,7 +33,7 @@ literal:: true
   (object_pair
     key: (key)
     separator: (sep_raw)
-    value: (scalar)))
+    value: (raw_scalar)))
 
 ==================
 Capitalized keywords are strings
