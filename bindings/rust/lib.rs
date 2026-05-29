@@ -1,6 +1,6 @@
 //! Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
 //!
-//! Spec: <https://github.com/ktav-lang/spec/blob/main/versions/0.1/spec.md>
+//! Spec: <https://github.com/ktav-lang/spec/blob/main/versions/0.5/spec.md>
 //!
 //! # Example
 //!
@@ -51,11 +51,11 @@ mod tests {
             .set_language(&super::LANGUAGE.into())
             .expect("Error loading Ktav language");
         let tree = parser
-            .parse("name: Russia\nport:i 8080\n", None)
+            .parse("name: Russia\nport: 8080\n", None)
             .expect("parse failed");
         let sexp = tree.root_node().to_sexp();
         assert!(sexp.contains("object_pair"));
-        assert!(sexp.contains("sep_int"));
+        assert!(sexp.contains("integer"));
         assert!(!tree.root_node().has_error());
     }
 }
