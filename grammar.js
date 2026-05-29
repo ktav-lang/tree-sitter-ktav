@@ -127,9 +127,16 @@ module.exports = grammar({
 
     // ---- Keys ----
     key: $ => choice(
-      $._key_segment,
+      $._spaced_key,
       $.dotted_key,
     ),
+
+    // A key may contain internal whitespace (spec 0.5.0 § 4): the run of
+    // space-separated segments up to the separator is one key
+    // (`multi word key: value`). The inter-segment spaces are `extras`,
+    // so the `key` node still spans the whole text with no named children
+    // (renders as `(key)`, same as a single-segment key).
+    _spaced_key: $ => prec.left(repeat1($._key_segment)),
 
     dotted_key: $ => prec.left(seq(
       $._key_segment,
@@ -222,10 +229,13 @@ module.exports = grammar({
       optional(','),
     ),
 
+    // The value is optional: `{x:, y: 1}` and `{empty:}` are valid —
+    // a separator immediately followed by `,` or `}` is an empty value
+    // (spec 0.5.0 § 5.8).
     inline_pair: $ => seq(
       field('key', $.key),
       field('separator', choice($.sep_raw, $.sep_string)),
-      field('value', $.inline_value),
+      optional(field('value', $.inline_value)),
     ),
 
     _inline_item_list: $ => seq(
@@ -256,10 +266,17 @@ module.exports = grammar({
 
     // An inline scalar is terminated by an unescaped `,`, `}`, or `]`.
     // It may contain escape sequences (§ 3.7).
-    inline_scalar: $ => repeat1(choice(
-      $.escape_sequence,
-      $._inline_scalar_text,
-    )),
+    //
+    // The first chunk must NOT begin with `{` or `[`: a value position
+    // that opens with `{`/`[` is a nested compound, not a scalar. After
+    // the first character those bytes are ordinary literal content
+    // (`hello{world`, `mid[bracket`). This head/rest split keeps
+    // `nested_inline_*` vs `inline_scalar` unambiguous without sacrificing
+    // mid-value literal braces (§ 5.8).
+    inline_scalar: $ => seq(
+      choice($.escape_sequence, $._inline_scalar_head),
+      repeat(choice($.escape_sequence, $._inline_scalar_text)),
+    ),
 
     // Escape sequences recognised inside inline scalars (§ 3.7).
     escape_sequence: $ => token(choice(
@@ -273,9 +290,16 @@ module.exports = grammar({
       '\\r',
     )),
 
-    // Raw text inside an inline scalar: any char except `\`, `,`, `}`,
-    // `]`, CR, LF.
-    _inline_scalar_text: $ => /[^\\,\}\]\r\n]+/,
+    // Leading chunk of a scalar: first byte excludes whitespace and the
+    // openers `{`/`[` (so a value starting with an opener is a nested
+    // compound), plus the usual `\` `,` `}` `]` / CR / LF. Subsequent
+    // bytes allow `{`/`[` as literal content.
+    _inline_scalar_head: $ => token(/[^\s\\,\{\[\}\]\r\n][^\\,\}\]\r\n]*/),
+
+    // Continuation text after the head (or after an escape): any byte
+    // except `\`, `,`, the closers `}` `]`, and CR / LF. Open delimiters
+    // `{`/`[` are allowed here as literal content.
+    _inline_scalar_text: $ => token(/[^\\,\}\]\r\n]+/),
 
     // ---- Array items ----
     array_item: $ => choice(

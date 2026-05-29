@@ -1,5 +1,5 @@
 //! Conformance test: walk the language-agnostic Ktav test suite under
-//! `spec/versions/0.1/tests/` (a git submodule of `ktav-lang/spec`) and
+//! `spec/versions/0.5/tests/` (a git submodule of `ktav-lang/spec`) and
 //! exercise the tree-sitter grammar against every fixture.
 //!
 //! For tree-sitter we cannot validate full structural conformance the
@@ -44,7 +44,7 @@ use std::path::{Path, PathBuf};
 /// Valid fixtures that the tree-sitter grammar does NOT currently parse
 /// cleanly. The reference Rust parser handles them — these are gaps in
 /// the tree-sitter grammar specifically. Listed by path-suffix relative
-/// to `spec/versions/0.1/tests/`.
+/// to `spec/versions/0.5/tests/`.
 ///
 /// As of 0.2.1 the list is empty: the previous two entries
 /// (`valid/multiline/stripped_contains_double_paren.ktav` and
@@ -55,7 +55,7 @@ const KNOWN_VALID_FAILURES: &[&str] = &[];
 
 fn spec_tests_dir() -> Option<PathBuf> {
     let manifest = env!("CARGO_MANIFEST_DIR");
-    let p = Path::new(manifest).join("spec/versions/0.1/tests");
+    let p = Path::new(manifest).join("spec/versions/0.5/tests");
     if p.join("valid").is_dir() && p.join("invalid").is_dir() {
         Some(p)
     } else {
