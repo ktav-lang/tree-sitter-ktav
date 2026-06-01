@@ -165,7 +165,7 @@ CLI 即可构建。
 
 ## 许可证
 
-MIT — 见 [LICENSE](LICENSE)。
+MIT OR Apache-2.0。详见 [LICENSE-MIT](LICENSE-MIT) 和 [LICENSE-APACHE](LICENSE-APACHE)。
 
 ## 其他 Ktav 仓库
 

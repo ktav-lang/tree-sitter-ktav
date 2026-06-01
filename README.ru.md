@@ -171,7 +171,7 @@ npx tree-sitter test         # запускает корпус
 
 ## Лицензия
 
-MIT — см. [LICENSE](LICENSE).
+MIT OR Apache-2.0. См. [LICENSE-MIT](LICENSE-MIT) и [LICENSE-APACHE](LICENSE-APACHE).
 
 ## Другие репозитории Ktav
 

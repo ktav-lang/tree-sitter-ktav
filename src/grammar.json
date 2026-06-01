@@ -220,7 +220,7 @@
     },
     "_key_segment": {
       "type": "PATTERN",
-      "value": "[^\\s\\[\\]\\{\\}\\(\\):#,.\\r\\n]+"
+      "value": "([^\\s\\[\\]\\{\\}\\(\\):#,.\\r\\n\\\\]|\\\\[\\\\,\\}\\]\\{\\[nr.:])+"
     },
     "_value_line": {
       "type": "CHOICE",
@@ -840,6 +840,14 @@
           {
             "type": "STRING",
             "value": "\\r"
+          },
+          {
+            "type": "STRING",
+            "value": "\\."
+          },
+          {
+            "type": "STRING",
+            "value": "\\:"
           }
         ]
       }

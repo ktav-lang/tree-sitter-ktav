@@ -1,7 +1,7 @@
 /**
  * Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
  *
- * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.5/spec.md
+ * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md
  *
  * Ktav is line-oriented. Every line is one of:
  *   - blank
@@ -11,6 +11,13 @@
  *     `(`, `((`, `)`, `))`)
  *   - an array item (inside an open `[` array, or at the top level)
  *   - raw content of a multi-line string
+ *
+ * Changes from 0.5.0 to 0.6.0:
+ *   - Keys now process escape sequences (§ 3.7). The escape table grows
+ *     to 10 entries by adding `\.` (literal dot — does NOT split the
+ *     dotted path) and `\:` (literal colon — does NOT act as the
+ *     key/value separator). `\` becomes the escape lead in keys.
+ *     Breaking: a raw `\` in a key now requires `\\`.
  *
  * Changes from 0.3.0 (spec 0.1.1) to 0.5.0:
  *   - Comment marker changed from `#` to `##`. Single `#` is now a
@@ -143,9 +150,17 @@ module.exports = grammar({
       repeat1(seq('.', $._key_segment)),
     )),
 
-    // Key segment: any chars except whitespace, "[", "]", "{", "}", "(", ")",
-    // ":", ",", ".". Note: "#" is now allowed in keys (spec 0.5.0 § 4).
-    _key_segment: $ => /[^\s\[\]\{\}\(\):#,.\r\n]+/,
+    // Key segment (spec 0.6.0 § 4): a non-empty run of plain key bytes
+    // and/or escape sequences. Plain key bytes exclude whitespace, the
+    // bracket/paren/brace bytes, `:`, `,`, the dotted-path separator `.`,
+    // `#` (reserved for comment marker `##`), and the escape lead `\`.
+    // Those structural bytes — including `\.` and `\:` — can now appear
+    // inside a key when escaped (§ 3.7, expanded in 0.6.0 to include
+    // `\.` and `\:`).
+    //
+    // The dotted-path separator is an UNescaped `.`; an unescaped `\`
+    // is always the start of an escape sequence (10 forms in 0.6.0).
+    _key_segment: $ => /([^\s\[\]\{\}\(\):#,.\r\n\\]|\\[\\,\}\]\{\[nr.:])+/,
 
     // ---- Value line ----
     _value_line: $ => choice(
@@ -279,6 +294,10 @@ module.exports = grammar({
     ),
 
     // Escape sequences recognised inside inline scalars (§ 3.7).
+    // In 0.6.0 the table grows to 10 forms by adding `\.` and `\:` —
+    // they yield literal `.` and `:` respectively. Inside a value these
+    // are redundant (a value's `.`/`:` is already a literal byte) but
+    // remain accepted for symmetry with key parsing.
     escape_sequence: $ => token(choice(
       '\\\\',
       '\\,',
@@ -288,6 +307,8 @@ module.exports = grammar({
       '\\[',
       '\\n',
       '\\r',
+      '\\.',
+      '\\:',
     )),
 
     // Leading chunk of a scalar: first byte excludes whitespace and the

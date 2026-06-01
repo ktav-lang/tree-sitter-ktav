@@ -11,6 +11,52 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.6.0] — 2026-06-01
+
+Spec sync: tracks **Ktav 0.6.0** — a breaking revision of the key
+grammar. Keys now process the full `§ 3.7` escape set, and the escape
+table grows from 8 to 10 entries.
+
+### Breaking changes
+
+- **Key segments are now escape-aware.** A `key` segment is a non-empty
+  run of plain key bytes and/or escape sequences. An unescaped `.`
+  still splits a dotted path; an unescaped `:` still terminates the
+  key (it is the pair separator). The bytes `\.` and `\:` now stand
+  for a literal dot / literal colon inside a single segment, so keys
+  like `a.b`, `a:b`, `example.com` and `1.0` are finally expressible
+  (`a\.b`, `a\:b`, `example\.com`, `1\.0`).
+- **`\` is now the escape lead in keys.** A literal backslash in a key
+  must be written `\\`. Previously `\` was a plain key byte.
+- **Escape table expanded from 8 to 10 entries:** `\\`, `\,`, `\}`,
+  `\]`, `\{`, `\[`, `\n`, `\r`, **`\.`**, **`\:`**. The two new forms
+  are recognised both inside key segments and inside inline-scalar
+  values (in values they are redundant — `.` and `:` are already
+  literal bytes there — but accepted for symmetry).
+
+### Changed
+
+- `_key_segment` regex updated to
+  `([^\s\[\]\{\}\(\):#,.\r\n\\]|\\[\\,\}\]\{\[nr.:])+` — the plain
+  key-byte class now excludes raw `\` (it becomes the escape lead)
+  and any of the 10 escape forms is accepted as a single segment
+  unit. The dotted-key rule still splits on an unescaped `.`.
+- `escape_sequence` (inline scalars) extended with `\\.` and `\\:`.
+
+### Tests
+
+- Conformance harness re-pointed from `spec/versions/0.5/tests` to
+  `spec/versions/0.6/tests`. Six new `valid/key_escaping/*.ktav`
+  fixtures and the new `invalid/key_escaping/` + `invalid/bad_escape/`
+  categories all parse as expected.
+
+### Unchanged
+
+- Comment marker stays `##` (single `#` remains a content byte).
+- Value-side escape semantics for the eight original forms are
+  unchanged; `\.` and `\:` in values now produce a literal `.` / `:`
+  rather than a `BadEscapeSequence` (matches the spec).
+
 ## [0.5.0] — 2026-05-27
 
 Spec sync: tracks **Ktav 0.5.0** — a breaking revision of the

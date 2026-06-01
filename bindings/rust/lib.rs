@@ -1,6 +1,6 @@
 //! Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
 //!
-//! Spec: <https://github.com/ktav-lang/spec/blob/main/versions/0.5/spec.md>
+//! Spec: <https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md>
 //!
 //! # Example
 //!
