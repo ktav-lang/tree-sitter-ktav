@@ -157,8 +157,8 @@ CLI 即可构建。
 
 ## 状态
 
-`0.1.0` — 实现 [Ktav 0.1.0](https://github.com/ktav-lang/spec/blob/main/versions/0.1/spec.md)。
-语法接受所有合法的 Ktav 0.1.0 文档（对 spec 仓库下
+`0.6.0` — 实现 [Ktav 0.6.0](https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md)。
+语法接受所有合法的 Ktav 0.6.0 文档（对 spec 仓库下
 `tests/valid/*.ktav` 全部用例验证通过）。它是一个语法接受器，而非
 严格的规范校验器——少数语法接受但规范拒绝的边界情况（主要是 § 6.10
 "标记后必须有空格"）见 [`CHANGELOG.md`](CHANGELOG.md)。

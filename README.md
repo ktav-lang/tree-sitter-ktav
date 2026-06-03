@@ -161,8 +161,8 @@ so consumers do not need the CLI to build.
 
 ## Status
 
-`0.1.0` — implements [Ktav 0.1.0](https://github.com/ktav-lang/spec/blob/main/versions/0.1/spec.md).
-The grammar accepts every valid Ktav 0.1.0 document (verified against
+`0.6.0` — implements [Ktav 0.6.0](https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md).
+The grammar accepts every valid Ktav 0.6.0 document (verified against
 all `tests/valid/*.ktav` fixtures from the spec repo). It is a
 syntactic accepter, not a strict spec validator — see
 [`CHANGELOG.md`](CHANGELOG.md) "Known limitations" for the small
