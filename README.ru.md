@@ -6,6 +6,8 @@
 
 **Языки:** [English](README.md) · **Русский** · [简体中文](README.zh.md)
 
+**Песочница:** конвертация JSON / YAML / TOML / INI ⇄ Ktav прямо в браузере — **[ktav-lang.github.io](https://ktav-lang.github.io/)**.
+
 [![CI](https://github.com/ktav-lang/tree-sitter-ktav/actions/workflows/ci.yml/badge.svg)](https://github.com/ktav-lang/tree-sitter-ktav/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/tree-sitter-ktav.svg)](https://crates.io/crates/tree-sitter-ktav)
 [![npm](https://img.shields.io/npm/v/tree-sitter-ktav.svg)](https://www.npmjs.com/package/tree-sitter-ktav)
