@@ -7,8 +7,10 @@
 
 **演练场：** 在浏览器中互转 JSON / YAML / TOML / INI ⇄ Ktav — **[ktav-lang.github.io](https://ktav-lang.github.io/)**。
 
-[![CI](https://github.com/ktav-lang/tree-sitter-ktav/actions/workflows/ci.yml/badge.svg)](https://github.com/ktav-lang/tree-sitter-ktav/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/tree-sitter-ktav.svg)](https://crates.io/crates/tree-sitter-ktav)
+[![Crates.io](https://img.shields.io/crates/v/tree-sitter-ktav?style=flat-square&logo=rust&label=crates.io)](https://crates.io/crates/tree-sitter-ktav)
+[![CI](https://img.shields.io/github/actions/workflow/status/ktav-lang/tree-sitter-ktav/ci.yml?style=flat-square&logo=github&label=CI)](https://github.com/ktav-lang/tree-sitter-ktav/actions)
+![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue?style=flat-square)
+[![Playground](https://img.shields.io/badge/playground-try%20online-7c3aed?style=flat-square&logo=rocket&logoColor=white)](https://ktav-lang.github.io/)
 [![npm](https://img.shields.io/npm/v/tree-sitter-ktav.svg)](https://www.npmjs.com/package/tree-sitter-ktav)
 
 ---
