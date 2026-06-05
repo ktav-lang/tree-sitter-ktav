@@ -11,6 +11,10 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## [0.6.1] — 2026-06-05
+
+- Docs: rewrite all README examples to spec 0.6 syntax (bare numbers instead of removed `:i`/`:f` markers; `##` comments instead of `#`).
+
 ## [0.6.0] — 2026-06-01
 
 Spec sync: tracks **Ktav 0.6.0** — a breaking revision of the key
