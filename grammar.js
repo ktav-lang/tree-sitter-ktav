@@ -73,7 +73,12 @@ module.exports = grammar({
 
   conflicts: $ => [],
 
-  word: $ => $._key_segment,
+  // `word` must resolve to ONE token shape for tree-sitter's keyword-
+  // extraction. `_bare_key_segment` (plain identifier-like key bytes)
+  // fits that; `quoted_key_segment` is delimited and can't collide
+  // with the bareword keyword literals (`null`/`true`/`false`) this
+  // mechanism exists for, so it is deliberately excluded.
+  word: $ => $._bare_key_segment,
 
   rules: {
     // The top-level document is a sequence of lines. Per spec § 5.0.1
@@ -136,6 +141,10 @@ module.exports = grammar({
     key: $ => choice(
       $._spaced_key,
       $.dotted_key,
+      // A key that is exactly one quoted segment, undotted (§ 5.3.3):
+      // `"port": 1`. Named (not hidden) so highlighting/queries can
+      // tell a quoted key apart from a bare one.
+      $.quoted_key_segment,
     ),
 
     // A key may contain internal whitespace (spec 0.5.0 § 4): the run of
@@ -143,24 +152,83 @@ module.exports = grammar({
     // (`multi word key: value`). The inter-segment spaces are `extras`,
     // so the `key` node still spans the whole text with no named children
     // (renders as `(key)`, same as a single-segment key).
-    _spaced_key: $ => prec.left(repeat1($._key_segment)),
+    //
+    // Bare only: a leading quote in ANY of these glued words always
+    // opens a `quoted_key_segment` instead (§ 5.3.3's positional rule),
+    // so this repetition cannot combine with quoting — that is exactly
+    // how `"a" "b": 1` becomes an `InvalidKey` (see `quoted_key_segment`
+    // below) instead of the one-key parse this grammar used to produce.
+    _spaced_key: $ => prec.left(repeat1($._bare_key_segment)),
 
+    // Spec 0.7.0 § 5.3.3: each dot-separated piece is independently
+    // bare or quoted — the positional rule is "re-applied fresh at the
+    // start of EVERY segment", including the one right after a dot
+    // (`a."b.c".d: 1`).
     dotted_key: $ => prec.left(seq(
       $._key_segment,
       repeat1(seq('.', $._key_segment)),
     )),
 
-    // Key segment (spec 0.6.0 § 4): a non-empty run of plain key bytes
-    // and/or escape sequences. Plain key bytes exclude whitespace, the
-    // bracket/paren/brace bytes, `:`, `,`, the dotted-path separator `.`,
+    _key_segment: $ => choice($.quoted_key_segment, $._bare_key_segment),
+
+    // Bare key segment (spec 0.6.0 § 4, positional rule added in
+    // 0.7.0 § 5.3.3): a non-empty run of plain key bytes and/or escape
+    // sequences. Plain key bytes exclude whitespace, the bracket/
+    // paren/brace bytes, `:`, `,`, the dotted-path separator `.`,
     // `#` (reserved for comment marker `##`), and the escape lead `\`.
-    // Those structural bytes — including `\.` and `\:` — can now appear
-    // inside a key when escaped (§ 3.7, expanded in 0.6.0 to include
-    // `\.` and `\:`).
+    // Those structural bytes — including `\.` and `\:` — can appear
+    // inside a key when escaped (10 forms; the escape table's four
+    // 0.7.0 additions, `\"`/`\'`/`` \` ``/`\uXXXX`, are out of scope
+    // here — see the \uXXXX+BOM task).
+    //
+    // The FIRST byte additionally excludes `"`, `'`, `` ` `` — those
+    // open a `quoted_key_segment` instead (§ 5.3.3's positional rule)
+    // — while a quote at any OTHER position stays an ordinary key byte
+    // (`port": 1`, `don't: 1`, unaffected by quoting).
     //
     // The dotted-path separator is an UNescaped `.`; an unescaped `\`
     // is always the start of an escape sequence (10 forms in 0.6.0).
-    _key_segment: $ => /([^\s\[\]\{\}\(\):#,.\r\n\\]|\\[\\,\}\]\{\[nr.:])+/,
+    _bare_key_segment: $ => token(seq(
+      choice(
+        /[^\s\[\]\{\}\(\):#,.\r\n\\"'`]/,
+        /\\[\\,\}\]\{\[nr.:]/,
+      ),
+      repeat(choice(
+        /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
+        /\\[\\,\}\]\{\[nr.:]/,
+      )),
+    )),
+
+    // Quoted key segment (spec 0.7.0 § 5.3.3, § 4): opened by `"`, `'`,
+    // or `` ` ``, running to the first UNescaped occurrence of that
+    // SAME character. One token per delimiter — `.` `:` `,` `{` `}`
+    // `[` `]` and the two OTHER quote characters are all ordinary
+    // content inside it (never split/terminate), and content is never
+    // trimmed. Because the whole segment is a single token, this
+    // opacity falls out of tokenization — no external scanner needed.
+    // Excluded from content: ASCII control bytes other than tab/VT/FF,
+    // DEL, the escape lead `\`, and the segment's own delimiter (§ 4's
+    // `<dq-char>`/`<sq-char>`/`<bt-char>`).
+    //
+    // Escapes recognised here: the same 10 forms `_bare_key_segment`
+    // has, PLUS self-escaping this segment's own delimiter (`\"` in a
+    // `"..."` segment, `\'` in `'...'`, `` \` `` in `` `...` ``) — the
+    // minimum needed to close a segment containing its own delimiter.
+    // The other two quote-escapes and `\uXXXX` are out of scope (G2).
+    quoted_key_segment: $ => token(choice(
+      seq('"', repeat(choice(
+        /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\"]/,
+        /\\[\\,\}\]\{\[nr.:"]/,
+      )), '"'),
+      seq("'", repeat(choice(
+        /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\']/,
+        /\\[\\,\}\]\{\[nr.:']/,
+      )), "'"),
+      seq('`', repeat(choice(
+        /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\`]/,
+        /\\[\\,\}\]\{\[nr.:`]/,
+      )), '`'),
+    )),
 
     // ---- Value line ----
     _value_line: $ => choice(

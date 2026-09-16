@@ -175,7 +175,17 @@
   {
     "type": "dotted_key",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "quoted_key_segment",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "empty_array",
@@ -320,6 +330,10 @@
       "types": [
         {
           "type": "dotted_key",
+          "named": true
+        },
+        {
+          "type": "quoted_key_segment",
           "named": true
         }
       ]
@@ -727,6 +741,10 @@
   },
   {
     "type": "open_paren",
+    "named": true
+  },
+  {
+    "type": "quoted_key_segment",
     "named": true
   },
   {

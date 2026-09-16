@@ -1,7 +1,7 @@
 {
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
   "name": "ktav",
-  "word": "_key_segment",
+  "word": "_bare_key_segment",
   "rules": {
     "source_file": {
       "type": "REPEAT",
@@ -175,6 +175,10 @@
         {
           "type": "SYMBOL",
           "name": "dotted_key"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "quoted_key_segment"
         }
       ]
     },
@@ -185,7 +189,7 @@
         "type": "REPEAT1",
         "content": {
           "type": "SYMBOL",
-          "name": "_key_segment"
+          "name": "_bare_key_segment"
         }
       }
     },
@@ -219,8 +223,149 @@
       }
     },
     "_key_segment": {
-      "type": "PATTERN",
-      "value": "([^\\s\\[\\]\\{\\}\\(\\):#,.\\r\\n\\\\]|\\\\[\\\\,\\}\\]\\{\\[nr.:])+"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "quoted_key_segment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_bare_key_segment"
+        }
+      ]
+    },
+    "_bare_key_segment": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PATTERN",
+                "value": "[^\\s\\[\\]\\{\\}\\(\\):#,.\\r\\n\\\\\"'`]"
+              },
+              {
+                "type": "PATTERN",
+                "value": "\\\\[\\\\,\\}\\]\\{\\[nr.:]"
+              }
+            ]
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PATTERN",
+                  "value": "[^\\s\\[\\]\\{\\}\\(\\):#,.\\r\\n\\\\]"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "\\\\[\\\\,\\}\\]\\{\\[nr.:]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "quoted_key_segment": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "\""
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "PATTERN",
+                      "value": "[^\\x00-\\x08\\x0A\\x0D\\x0E-\\x1F\\x7F\\\\\"]"
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "\\\\[\\\\,\\}\\]\\{\\[nr.:\"]"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "STRING",
+                "value": "\""
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "'"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "PATTERN",
+                      "value": "[^\\x00-\\x08\\x0A\\x0D\\x0E-\\x1F\\x7F\\\\']"
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "\\\\[\\\\,\\}\\]\\{\\[nr.:']"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "STRING",
+                "value": "'"
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "`"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "PATTERN",
+                      "value": "[^\\x00-\\x08\\x0A\\x0D\\x0E-\\x1F\\x7F\\\\`]"
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "\\\\[\\\\,\\}\\]\\{\\[nr.:`]"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "STRING",
+                "value": "`"
+              }
+            ]
+          }
+        ]
+      }
     },
     "_value_line": {
       "type": "CHOICE",
