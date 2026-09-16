@@ -1,5 +1,5 @@
 //! Conformance test: walk the language-agnostic Ktav test suite under
-//! `spec/versions/0.6/tests/` (a git submodule of `ktav-lang/spec`) and
+//! `spec/versions/0.7/tests/` (a git submodule of `ktav-lang/spec`) and
 //! exercise the tree-sitter grammar against every fixture.
 //!
 //! For tree-sitter we cannot validate full structural conformance the
@@ -32,30 +32,60 @@
 //!
 //! ## Known grammar divergences (allow-list)
 //!
-//! Two valid-fixture cases currently round-trip with grammar errors;
-//! they are tracked in `KNOWN_VALID_FAILURES` below. Removing an entry
-//! from that list when the grammar gains support is a one-line
-//! follow-up. Adding a new entry requires a comment justifying why
-//! the fixture is allowed to regress.
+//! Six valid-fixture cases currently round-trip with grammar errors; they
+//! are tracked in `KNOWN_VALID_FAILURES` below as NAMED entries — five
+//! belonging to gap G5 (root-kind dispatch, see
+//! `docs/spec-0.7-gap-audit.md` § 5) and one NUL-byte lexer limitation —
+//! each carrying its own justification comment in the list. A new failing
+//! fixture that is NOT in the list is a hard failure by design. Removing
+//! an entry when the grammar gains support is a one-line follow-up.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Valid fixtures that the tree-sitter grammar does NOT currently parse
-/// cleanly. The reference Rust parser handles them — these are gaps in
-/// the tree-sitter grammar specifically. Listed by path-suffix relative
-/// to `spec/versions/0.6/tests/`.
-///
-/// As of 0.2.1 the list is empty: the previous two entries
-/// (`valid/multiline/stripped_contains_double_paren.ktav` and
-/// `valid/raw_marker/paren_literals.ktav`) were closed by the
-/// context-sensitive multi-line closer scanner and the raw-marker
-/// no-dispatch grammar fix respectively.
-const KNOWN_VALID_FAILURES: &[&str] = &[];
+/// cleanly, listed by path suffix relative to `spec/versions/0.7/tests/`.
+/// Every entry MUST carry a justification comment naming the gap and the
+/// spec section; a fixture failing that is NOT listed here is a hard
+/// test failure by design (never a tolerated count). Removing an entry
+/// when the grammar gains support is a one-line follow-up.
+const KNOWN_VALID_FAILURES: &[&str] = &[
+    // ---- Gap G5: root-kind detection is not enforced (§ 5.0.1 rule 7). ----
+    // Valid only under stateful root-kind dispatch, which tree-sitter's
+    // regex lexer cannot express; see docs/spec-0.7-gap-audit.md § 5.
+    // An open design decision, deliberately not fixed blindly.
+    //
+    // Unterminated leading quote: § 5.3.3 / § 5.0.1 rule 7 re-classify
+    // the line as a root-Array String item; the grammar lexes a pair
+    // and errors. The .canonical twins are byte-identical to their
+    // primaries (the decoded value is not representable, so the writer
+    // echoes the raw line).
+    "valid/quoted_keys/unterminated_double_quote_first_line_falls_back.ktav",
+    "valid/quoted_keys/unterminated_double_quote_first_line_falls_back.canonical.ktav",
+    "valid/quoted_keys/unterminated_leading_quote_falls_back_to_array_item.ktav",
+    "valid/quoted_keys/unterminated_leading_quote_falls_back_to_array_item.canonical.ktav",
+    //
+    // Canonical form of a root-Array whose sole item is the String
+    // "a:b": the bare line must be read as an Array item (§ 5.0.1
+    // rule 7 / § 5.4 rule 9), but without root-kind state the grammar
+    // commits to object_pair and then — correctly — rejects it for
+    // missing whitespace after the separator (§ 6.10). Same G5
+    // decision.
+    "valid/top_level_array/glued_colon_first_item.canonical.ktav",
+    //
+    // NOT G5: the value contains a literal NUL byte inside a multiline
+    // verbatim body. tree-sitter's lexer cannot lex a token across a
+    // NUL byte (byte 0 doubles as the EOF sentinel), so
+    // multiline_content_line ([^\r\n]*(\r\n|\r|\n)) fails on the line
+    // "x\0y". A real fix needs an external content-line token that
+    // disambiguates true EOF via lexer->eof(); documented here rather
+    // than half-fixed in the grammar.
+    "valid/key_escaping/unicode_escape_nul_inline_value.canonical.ktav",
+];
 
 fn spec_tests_dir() -> Option<PathBuf> {
     let manifest = env!("CARGO_MANIFEST_DIR");
-    let p = Path::new(manifest).join("spec/versions/0.6/tests");
+    let p = Path::new(manifest).join("spec/versions/0.7/tests");
     if p.join("valid").is_dir() && p.join("invalid").is_dir() {
         Some(p)
     } else {
@@ -135,9 +165,9 @@ fn conformance_valid_fixtures_parse_cleanly() {
     let mut allowed_failures: Vec<String> = Vec::new();
     let total = files.len();
     for path in &files {
-        let text = fs::read_to_string(path)
+        let bytes = fs::read(path)
             .unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
-        let tree = match parser.parse(&text, None) {
+        let tree = match parser.parse(&bytes, None) {
             Some(t) => t,
             None => {
                 failures.push(format!("{}: parser returned None", path.display()));
@@ -207,12 +237,12 @@ fn conformance_invalid_fixtures_do_not_panic() {
     let total = files.len();
     let mut with_grammar_errors = 0usize;
     for path in &files {
-        let text = fs::read_to_string(path)
+        let bytes = fs::read(path)
             .unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
         // tree-sitter must always produce *some* tree (it's
         // error-recovering by design); we only assert no panic.
         let tree = parser
-            .parse(&text, None)
+            .parse(&bytes, None)
             .unwrap_or_else(|| panic!("{}: parser returned None", path.display()));
         let (errs, miss) = count_errors(tree.root_node());
         if errs + miss > 0 {
