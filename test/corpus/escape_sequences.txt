@@ -184,3 +184,28 @@ Quoted key segment: escaping a non-own quote character is accepted though never 
     separator: (sep_string)
     value: (integer)))
 
+==================
+Raw # after a \uXXXX escape is an ordinary key byte; the line is a pair, not a comment (spec 0.7.0 § 3.4, § 4 <key-char>; fixture key_escaping/hash_key_with_colon_composite)
+==================
+\u0023#a\:b: value
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+\u0023 decoding to ## does not make a comment: comment recognition is on raw text before escape decoding (spec 0.7.0 § 3.4, § 3.7.1; fixture key_escaping/unicode_escape_hash_key_comment_collision)
+==================
+\u0023#tag: v
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))

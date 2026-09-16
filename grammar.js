@@ -216,8 +216,11 @@ module.exports = grammar({
     // Bare key segment (spec 0.6.0 § 4, positional rule added in
     // 0.7.0 § 5.3.3): a non-empty run of plain key bytes and/or escape
     // sequences. Plain key bytes exclude whitespace, the bracket/
-    // paren/brace bytes, `:`, `,`, the dotted-path separator `.`,
-    // `#` (reserved for comment marker `##`), and the escape lead `\`.
+    // paren/brace bytes, `:`, `,`, the dotted-path separator `.`, and
+    // the escape lead `\`. Raw `#` is an ordinary key byte (spec
+    // 0.7.0 § 3.4/§ 4 `<key-char>`); only a trimmed line whose first
+    // non-whitespace code points are `##` is a comment, and the
+    // whole-line `comment` token wins that competition by longest match.
     // Those structural bytes — including `\.` and `\:` — can appear
     // inside a key when escaped. Spec 0.7.0 § 3.7 has fourteen escape
     // forms: the ten from 0.6.0 plus `\"`, `\'`, `` \` ``, and `\uXXXX`
@@ -234,12 +237,12 @@ module.exports = grammar({
     // is always the start of an escape sequence (fourteen forms).
     _bare_key_segment: $ => token(seq(
       choice(
-        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\"'`]/,
+        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\"'`]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       ),
       repeat(choice(
-        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\]/,
+        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       )),
@@ -263,7 +266,7 @@ module.exports = grammar({
     // states, so tree-sitter never has to choose between them for the
     // same input position, even though both can start with a quote.
     _bare_key_segment_cont: $ => token(repeat1(choice(
-      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\]/,
+      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
       /\\[\\,\}\]\{\[nr.:"'`]/,
       /\\u[0-9a-fA-F]{4}/,
     ))),
