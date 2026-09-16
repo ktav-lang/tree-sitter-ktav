@@ -61,7 +61,20 @@ module.exports = grammar({
   extras: $ => [
     // Inline horizontal whitespace is insignificant between tokens
     // on the same line. Newlines are explicit (`_newline`).
-    /[ \t]+/,
+    //
+    // Spec 0.7.0 § 3.3 freezes whitespace at 25 exact code points; LF/CR
+    // are excluded here (they are line terminators, handled by `_newline`
+    // and friends, never insignificant). Of the remaining 23, only tab,
+    // space, VT (`\x0B`), and FF (`\x0C`) are listed here: Appendix A
+    // widens `<key-char>` to admit raw VT/FF as key content (matching tab's
+    // pre-existing treatment) and requires FF to be strippable as line
+    // indentation, same as tab/space already are. The non-ASCII members
+    // (NBSP, NEL, U+3000, ...) are deliberately NOT added: they already
+    // behave correctly as ordinary content bytes wherever they appear
+    // (tree-sitter's lexer never special-cased them out), and folding them
+    // into `extras` here would change how they interact with leading
+    // indentation trimming — an unverified, out-of-scope behaviour change.
+    /[ \t\x0B\x0C]+/,
   ],
 
   externals: $ => [

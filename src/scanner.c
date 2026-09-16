@@ -5,36 +5,38 @@
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
 //                 byte immediately following a pair separator
-//                 (`:`, `::`, `:i`, `:f`) is ASCII whitespace
-//                 (space, tab, CR, LF) or EOF. The assertion is
-//                 zero-width — it does not consume any input — so
-//                 the existing `extras` whitespace handling and the
-//                 `_newline` rule for empty values both still apply
-//                 unchanged. Its sole purpose is to MAKE A PARSE FAIL
-//                 when a writer omits the mandatory whitespace, e.g.
-//                 `key:value` (§ 6.10 of the spec).
+//                 (`:` or `::`) is one of spec 0.7.0 § 3.3's 25
+//                 whitespace code points (see `is_ktav_ws` below —
+//                 NOT just ASCII space/tab/CR/LF) or EOF. The
+//                 assertion is zero-width — it does not consume any
+//                 input — so the existing `extras` whitespace handling
+//                 and the `_newline` rule for empty values both still
+//                 apply unchanged. Its sole purpose is to MAKE A PARSE
+//                 FAIL when a writer omits the mandatory whitespace,
+//                 e.g. `key:value` (§ 6.10 of the spec).
 //
-//   _strict_eol — consumes `[ \t]*` followed by `\r?\n` OR by EOF.
-//                 Used as the line terminator for compound closers
-//                 (`}`, `]`) so that any non-whitespace content
-//                 between the closer and the line terminator
-//                 causes a parse failure (§ 5.6.1 closer-on-its-own-
-//                 line and the cleanliness rule for object/array
-//                 closers).
+//   _strict_eol — consumes a run of `is_h_ws` (§ 3.3 whitespace minus
+//                 the two line terminators) followed by `\r`, `\n`,
+//                 `\r\n`, OR EOF. Used as the line terminator for
+//                 compound closers (`}`, `]`) so that any non-
+//                 whitespace content between the closer and the line
+//                 terminator causes a parse failure (§ 5.6.1 closer-
+//                 on-its-own-line and the cleanliness rule for
+//                 object/array closers).
 //
 //   _stripped_close  — context-sensitive closer for `(...)` multi-line
-//                      strings. Matches `)` followed by `[ \t]*\r?\n`
-//                      (or EOF). Only valid inside the body of a
-//                      `multiline_stripped`. A `))` line in that
-//                      context is NOT a close — the scanner declines
-//                      and the line falls through to the
+//                      strings. Matches `)` followed by `is_h_ws*` then
+//                      a line terminator (or EOF). Only valid inside
+//                      the body of a `multiline_stripped`. A `))` line
+//                      in that context is NOT a close — the scanner
+//                      declines and the line falls through to the
 //                      `multiline_content_line` regex token.
 //
 //   _verbatim_close  — context-sensitive closer for `((...))` multi-line
-//                      strings. Matches `))` followed by `[ \t]*\r?\n`
-//                      (or EOF). Only valid inside `multiline_verbatim`.
-//                      A single `)` line in that context falls through
-//                      to `multiline_content_line`.
+//                      strings. Matches `))` followed by `is_h_ws*` then
+//                      a line terminator (or EOF). Only valid inside
+//                      `multiline_verbatim`. A single `)` line in that
+//                      context falls through to `multiline_content_line`.
 //
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
@@ -69,14 +71,33 @@ void tree_sitter_ktav_external_scanner_deserialize(void *payload, const char *bu
     (void)length;
 }
 
-static inline bool is_h_ws(int32_t c) {
-    return c == ' ' || c == '\t';
+// Spec 0.7.0 § 3.3 freezes whitespace at exactly twenty-five code points:
+// tab, LF, VT, FF, CR, space, NEL (U+0085), NBSP (U+00A0), OGHAM SPACE MARK
+// (U+1680), EN QUAD..HAIR SPACE (U+2000-U+200A), LINE/PARAGRAPH SEPARATOR
+// (U+2028/U+2029), NNBSP (U+202F), MMSP (U+205F), IDEOGRAPHIC SPACE
+// (U+3000). Implementations MUST recognise exactly this set, never a host
+// Unicode-whitespace primitive (§ 3.3 says so explicitly) — hence the
+// explicit code-point list below rather than any libc/Unicode helper.
+static inline bool is_ktav_ws(int32_t c) {
+    return c == 0x09 || c == 0x0A || c == 0x0B || c == 0x0C || c == 0x0D ||
+           c == 0x20 || c == 0x85 || c == 0xA0 || c == 0x1680 ||
+           (c >= 0x2000 && c <= 0x200A) || c == 0x2028 || c == 0x2029 ||
+           c == 0x202F || c == 0x205F || c == 0x3000;
 }
 
-// Consume optional `[ \t]*` then a single line terminator (LF, CRLF,
-// or EOF). Returns true on success and leaves `mark_end` at the byte
-// after the terminator. Returns false (without disturbing mark_end's
-// previous position) if the next non-h-ws byte is not a terminator.
+// The same 25-code-point set, minus the two line terminators (LF, CR):
+// "horizontal" whitespace usable around structural markers within a
+// single line (closer lines' leading/trailing `(ws)`, `<sep-end>`'s
+// mandatory post-separator run) without ever consuming a line terminator.
+static inline bool is_h_ws(int32_t c) {
+    return is_ktav_ws(c) && c != '\n' && c != '\r';
+}
+
+// Consume an optional run of `is_h_ws` then a single line terminator
+// (LF, CR, CRLF — spec 0.7.0 § 3.2 treats all three as equivalent — or
+// EOF). Returns true on success and leaves `mark_end` at the byte after
+// the terminator. Returns false (without disturbing mark_end's previous
+// position) if the next non-h-ws byte is not a terminator.
 static bool consume_line_terminator(TSLexer *lexer) {
     while (is_h_ws(lexer->lookahead)) {
         lexer->advance(lexer, false);
@@ -115,7 +136,9 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
     // at the current position so the token has zero length.
     if (valid_symbols[MARKER_WS]) {
         int32_t c = lexer->lookahead;
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == 0) {
+        // Spec 0.7.0 § 4 `<sep-end> ::= 1*ws | &line-end`: any of the 25
+        // § 3.3 whitespace code points satisfies "1 ws", not just ASCII.
+        if (is_ktav_ws(c) || c == 0) {
             lexer->mark_end(lexer);
             lexer->result_symbol = MARKER_WS;
             return true;

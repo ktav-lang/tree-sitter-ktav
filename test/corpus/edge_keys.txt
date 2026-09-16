@@ -151,3 +151,42 @@ Nothing may follow a quoted segment's closer: InvalidKey (spec 0.7.0 § 5.3.3)
       (quoted_key_segment))
     separator: (sep_string)
     value: (integer)))
+
+==================
+Raw VT inside a key is admitted as key content (spec 0.7.0 Appendix A widens <key-char> to admit VT/FF, matching § 3.3)
+==================
+ab: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Raw FF as leading line indentation is stripped like any other § 3.3 whitespace (spec 0.7.0 Appendix A + § 3.3 "whitespace at the beginning of a line is indentation ... the parser ignores it")
+==================
+a: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Raw NEL (U+0085) inside a key stays ordinary glued content — conformant boundary, not "indentation" (a non-ASCII § 3.3 whitespace member is deliberately NOT folded into `extras`; interior placement is preserved verbatim per § 4's key-char note)
+==================
+ab: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))

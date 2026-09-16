@@ -1458,7 +1458,7 @@
   "extras": [
     {
       "type": "PATTERN",
-      "value": "[ \\t]+"
+      "value": "[ \\t\\x0B\\x0C]+"
     }
   ],
   "conflicts": [],

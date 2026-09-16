@@ -259,3 +259,38 @@ body: (
       (open_paren)
       (multiline_content_line)
       (close_paren))))
+
+==================
+§ 3.3 / § 4: NBSP satisfies <sep-end> after a plain `:` separator (spec 0.7.0 whitespace is the 25-code-point set, not ASCII-only)
+==================
+a: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+§ 5.6.1: closer line tolerates trailing NBSP, not just ASCII space/tab (spec 0.7.0 § 3.3)
+==================
+o: {
+  k: v
+} 
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (close_brace))))
+
