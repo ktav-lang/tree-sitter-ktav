@@ -32,3 +32,16 @@ path: [C\\Users]
       (inline_value
         (inline_scalar
           (escape_sequence))))))
+
+==================
+Whole-line scalar value: backslash-u sequence is literal content (spec 0.7 § 3.7 boundary — no escape processing here)
+==================
+a: \u0041
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (scalar)))
