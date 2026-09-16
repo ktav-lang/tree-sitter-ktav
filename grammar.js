@@ -62,19 +62,23 @@ module.exports = grammar({
     // Inline horizontal whitespace is insignificant between tokens
     // on the same line. Newlines are explicit (`_newline`).
     //
-    // Spec 0.7.0 § 3.3 freezes whitespace at 25 exact code points; LF/CR
-    // are excluded here (they are line terminators, handled by `_newline`
-    // and friends, never insignificant). Of the remaining 23, only tab,
-    // space, VT (`\x0B`), and FF (`\x0C`) are listed here: Appendix A
-    // widens `<key-char>` to admit raw VT/FF as key content (matching tab's
-    // pre-existing treatment) and requires FF to be strippable as line
-    // indentation, same as tab/space already are. The non-ASCII members
-    // (NBSP, NEL, U+3000, ...) are deliberately NOT added: they already
-    // behave correctly as ordinary content bytes wherever they appear
-    // (tree-sitter's lexer never special-cased them out), and folding them
-    // into `extras` here would change how they interact with leading
-    // indentation trimming — an unverified, out-of-scope behaviour change.
-    /[ \t\x0B\x0C]+/,
+    // Spec 0.7.0 § 3.3 freezes whitespace at 25 exact code points; this is
+    // the single whitespace definition for the whole grammar — there is no
+    // narrower "structural" set (§ 3.3: "There is no separate, narrower
+    // 'structural' whitespace concept"). LF/CR are excluded here (they are
+    // line terminators, § 3.2, handled by `_newline` and the scanner), so
+    // the class below is the other 23. Every token content class in this
+    // file excludes the same 23 code points at its first-byte position, so
+    // a leading/trailing run is always skipped HERE (indentation, § 3.3;
+    // key-segment edge trimming, § 4 `<raw-segment>`; inline-scalar edge
+    // trimming, § 5.8.1) instead of being glued into a token. VT (0x0B) and
+    // FF (0x0C) stay excluded from tokens even though Appendix A admits
+    // them as key content: interior occurrences are preserved verbatim in
+    // the key node span via the extras split (the same mechanism interior
+    // spaces have always used). Never write `\s`: tree-sitter compiles it
+    // to ASCII-only [\t\n\v\f\r ], which silently treats NBSP/NEL/U+3000
+    // and friends as content bytes.
+    /[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+/,
   ],
 
   externals: $ => [
@@ -230,12 +234,12 @@ module.exports = grammar({
     // is always the start of an escape sequence (fourteen forms).
     _bare_key_segment: $ => token(seq(
       choice(
-        /[^\s\[\]\{\}\(\):#,.\r\n\\"'`]/,
+        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\"'`]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       ),
       repeat(choice(
-        /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
+        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       )),
@@ -259,7 +263,7 @@ module.exports = grammar({
     // states, so tree-sitter never has to choose between them for the
     // same input position, even though both can start with a quote.
     _bare_key_segment_cont: $ => token(repeat1(choice(
-      /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
+      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):#,.\r\n\\]/,
       /\\[\\,\}\]\{\[nr.:"'`]/,
       /\\u[0-9a-fA-F]{4}/,
     ))),
@@ -462,7 +466,7 @@ module.exports = grammar({
     // openers `{`/`[` (so a value starting with an opener is a nested
     // compound), plus the usual `\` `,` `}` `]` / CR / LF. Subsequent
     // bytes allow `{`/`[` as literal content.
-    _inline_scalar_head: $ => token(/[^\s\\,\{\[\}\]\r\n][^\\,\}\]\r\n]*/),
+    _inline_scalar_head: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\\,\{\[\}\]\r\n][^\\,\}\]\r\n]*/),
 
     // Continuation text after the head (or after an escape): any byte
     // except `\`, `,`, the closers `}` `]`, and CR / LF. Open delimiters
@@ -506,7 +510,7 @@ module.exports = grammar({
     // `top_scalar` — bare-scalar at the document root. Forbids `:` so
     // that pair-shaped lines always parse as `object_pair`.
     top_scalar: $ => $._top_scalar_text,
-    _top_scalar_text: $ => token(/[^\s:\{\[\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
+    _top_scalar_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(
@@ -540,7 +544,7 @@ module.exports = grammar({
       $._raw_scalar_text,
       $._newline,
     ),
-    _raw_scalar_text: $ => /[^\s\r\n][^\r\n]*/,
+    _raw_scalar_text: $ => /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n][^\r\n]*/,
 
     // Scalar text: any non-whitespace, non-newline content up to end
     // of line. Both `#` and `##` are allowed as content bytes in 0.5.0.
@@ -550,7 +554,7 @@ module.exports = grammar({
     // those opening bytes at position 0 to avoid the greedy-token
     // ambiguity. Lines starting with `(` are handled by multiline or
     // empty-paren rules likewise.
-    _scalar_text: $ => /[^\s\{\[\(\r\n][^\r\n]*/,
+    _scalar_text: $ => /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\{\[\(\r\n][^\r\n]*/,
 
     // ---- Number literals ----
     //

@@ -139,3 +139,38 @@ k: {"a}b": 1, c: 2}
         separator: (sep_string)
         value: (inline_value
           (inline_scalar))))))
+==================
+NBSP (U+00A0) between inline pair separator and nested array is § 3.3 whitespace (spec 0.7.0 § 3.3/§ 4 <sep-end>, § 5.8.1)
+==================
+{a: [1]}
+
+---
+
+(source_file
+  (top_array_item
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (nested_inline_array
+            (inline_value
+              (inline_scalar))))))))
+
+==================
+NBSP (U+00A0) between inline array opener and nested object is § 3.3 whitespace (spec 0.7.0 § 3.3/§ 4, § 5.8.1)
+==================
+[ {a: 1}]
+
+---
+
+(source_file
+  (top_array_item
+    value: (inline_array
+      (inline_value
+        (nested_inline_object
+          (inline_pair
+            key: (key)
+            separator: (sep_string)
+            value: (inline_value
+              (inline_scalar))))))))
