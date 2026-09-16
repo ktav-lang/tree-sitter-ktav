@@ -45,3 +45,142 @@ a: \u0041
     key: (key)
     separator: (sep_string)
     value: (scalar)))
+
+==================
+Bare key segment: \uXXXX escape (spec 0.7.0 § 3.7.1)
+==================
+a\u0041b: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+\uXXXX decoding to a dot does not split the key (spec 0.7.0 § 3.7.1, § 4: a recognised escape is never re-examined as a structural delimiter)
+==================
+a\u002Eb: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+\uXXXX escape inside an inline scalar value (spec 0.7.0 § 3.7.1)
+==================
+k: {x: A\u0041B}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar
+            (escape_sequence)))))))
+
+==================
+Surrogate pair: two \uXXXX escapes combine above the BMP (spec 0.7.0 § 3.7.1)
+==================
+k: [\uD83D\uDE00]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar
+          (escape_sequence)
+          (escape_sequence))))))
+
+==================
+Lone surrogate: accepted at the tree-shape level (spec 0.7.0 § 3.7.1 makes this a BadEscapeSequence error, but that is a semantic/diagnosis check requiring cross-token pairing state a regex token cannot express; deferred to the reference parser, matching § 12 of the gap audit)
+==================
+k: [\uD800]
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_array
+      (inline_value
+        (inline_scalar
+          (escape_sequence))))))
+
+==================
+Malformed \u escape (fewer than four hex digits) is never partially consumed and fails to parse (spec 0.7.0 § 3.7.1)
+:error
+==================
+a\u12: 1
+
+---
+
+(source_file
+  (ERROR
+    (multiline_content_line)))
+
+==================
+Bare key segment: all three quote escapes (spec 0.7.0 § 3.7)
+==================
+a\"b\'c\`d: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Inline scalar value: all three quote escapes (spec 0.7.0 § 3.7, § 5.3.3 — recognised in values too, even though a raw quote there is never structural)
+==================
+k: {x: a\"b\'c\`d}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar
+            (escape_sequence)
+            (escape_sequence)
+            (escape_sequence)))))))
+
+==================
+Quoted key segment: escaping a non-own quote character is accepted though never required (spec 0.7.0 § 5.3.3 — \' and \` still decode correctly inside a "..." segment)
+==================
+"a\'b\`c": 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer)))
+

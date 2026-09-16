@@ -1,7 +1,7 @@
 /**
  * Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
  *
- * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md
+ * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.7/spec.md
  *
  * Ktav is line-oriented. Every line is one of:
  *   - blank
@@ -189,9 +189,11 @@ module.exports = grammar({
     // paren/brace bytes, `:`, `,`, the dotted-path separator `.`,
     // `#` (reserved for comment marker `##`), and the escape lead `\`.
     // Those structural bytes — including `\.` and `\:` — can appear
-    // inside a key when escaped (10 forms; the escape table's four
-    // 0.7.0 additions, `\"`/`\'`/`` \` ``/`\uXXXX`, are out of scope
-    // here — see the \uXXXX+BOM task).
+    // inside a key when escaped. Spec 0.7.0 § 3.7 has fourteen escape
+    // forms: the ten from 0.6.0 plus `\"`, `\'`, `` \` ``, and `\uXXXX`
+    // (exactly four case-insensitive hex digits, never partially
+    // consumed — a malformed `\u` form simply fails every alternative
+    // below, which is what makes it a parse error).
     //
     // The FIRST byte additionally excludes `"`, `'`, `` ` `` — those
     // open a `quoted_key_segment` instead (§ 5.3.3's positional rule)
@@ -199,15 +201,17 @@ module.exports = grammar({
     // (`port": 1`, `don't: 1`, unaffected by quoting).
     //
     // The dotted-path separator is an UNescaped `.`; an unescaped `\`
-    // is always the start of an escape sequence (10 forms in 0.6.0).
+    // is always the start of an escape sequence (fourteen forms).
     _bare_key_segment: $ => token(seq(
       choice(
         /[^\s\[\]\{\}\(\):#,.\r\n\\"'`]/,
-        /\\[\\,\}\]\{\[nr.:]/,
+        /\\[\\,\}\]\{\[nr.:"'`]/,
+        /\\u[0-9a-fA-F]{4}/,
       ),
       repeat(choice(
         /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
-        /\\[\\,\}\]\{\[nr.:]/,
+        /\\[\\,\}\]\{\[nr.:"'`]/,
+        /\\u[0-9a-fA-F]{4}/,
       )),
     )),
 
@@ -230,7 +234,8 @@ module.exports = grammar({
     // same input position, even though both can start with a quote.
     _bare_key_segment_cont: $ => token(repeat1(choice(
       /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
-      /\\[\\,\}\]\{\[nr.:]/,
+      /\\[\\,\}\]\{\[nr.:"'`]/,
+      /\\u[0-9a-fA-F]{4}/,
     ))),
 
     // Quoted key segment (spec 0.7.0 § 5.3.3, § 4): opened by `"`, `'`,
@@ -244,23 +249,28 @@ module.exports = grammar({
     // DEL, the escape lead `\`, and the segment's own delimiter (§ 4's
     // `<dq-char>`/`<sq-char>`/`<bt-char>`).
     //
-    // Escapes recognised here: the same 10 forms `_bare_key_segment`
-    // has, PLUS self-escaping this segment's own delimiter (`\"` in a
-    // `"..."` segment, `\'` in `'...'`, `` \` `` in `` `...` ``) — the
-    // minimum needed to close a segment containing its own delimiter.
-    // The other two quote-escapes and `\uXXXX` are out of scope (G2).
+    // Escapes recognised here: the full fourteen-form table (spec 0.7.0
+    // § 3.7 / § 5.3.3 — "there is no separate, smaller table for quoted
+    // content"), including ALL THREE quote-escapes uniformly regardless
+    // of delimiter (only the segment's OWN raw, unescaped delimiter is
+    // structural; the escaped spelling of any of the three always works,
+    // and the other two raw quote characters need no escape at all) and
+    // `\uXXXX`.
     quoted_key_segment: $ => token(choice(
       seq('"', repeat(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\"]/,
-        /\\[\\,\}\]\{\[nr.:"]/,
+        /\\[\\,\}\]\{\[nr.:"'`]/,
+        /\\u[0-9a-fA-F]{4}/,
       )), '"'),
       seq("'", repeat(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\']/,
-        /\\[\\,\}\]\{\[nr.:']/,
+        /\\[\\,\}\]\{\[nr.:"'`]/,
+        /\\u[0-9a-fA-F]{4}/,
       )), "'"),
       seq('`', repeat(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\`]/,
-        /\\[\\,\}\]\{\[nr.:`]/,
+        /\\[\\,\}\]\{\[nr.:"'`]/,
+        /\\u[0-9a-fA-F]{4}/,
       )), '`'),
     )),
 
@@ -395,11 +405,16 @@ module.exports = grammar({
       repeat(choice($.escape_sequence, $._inline_scalar_text)),
     ),
 
-    // Escape sequences recognised inside inline scalars (§ 3.7).
-    // In 0.6.0 the table grows to 10 forms by adding `\.` and `\:` —
-    // they yield literal `.` and `:` respectively. Inside a value these
-    // are redundant (a value's `.`/`:` is already a literal byte) but
-    // remain accepted for symmetry with key parsing.
+    // Escape sequences recognised inside inline scalars (spec 0.7.0 § 3.7:
+    // fourteen forms). `\.` and `\:` yield literal `.` and `:` — inside a
+    // value these are redundant (already literal bytes there) but remain
+    // accepted for symmetry with key parsing. `\"`, `\'`, `` \` `` yield
+    // their literal quote byte (§ 5.3.3: recognised in every escape-aware
+    // context alike, values included, even though a raw quote in a value
+    // is never structural). `\uXXXX` names a code point by exactly four
+    // case-insensitive hex digits; a malformed form (fewer than four
+    // digits) matches no alternative here and is therefore never
+    // partially consumed.
     escape_sequence: $ => token(choice(
       '\\\\',
       '\\,',
@@ -411,6 +426,10 @@ module.exports = grammar({
       '\\r',
       '\\.',
       '\\:',
+      '\\"',
+      '\\\'',
+      '\\`',
+      /\\u[0-9a-fA-F]{4}/,
     )),
 
     // Leading chunk of a scalar: first byte excludes whitespace and the
