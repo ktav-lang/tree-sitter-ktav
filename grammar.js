@@ -119,7 +119,11 @@ module.exports = grammar({
 
     blank_line: $ => $._newline,
 
-    _newline: $ => /\r?\n/,
+    // Spec 0.7.0 § 3.2: a line terminator is LF, CR, or CRLF — all three
+    // MUST be treated as equivalent. `\r?\n` (LF or CRLF only) rejected a
+    // lone CR; every line-terminator-matching pattern in this grammar
+    // uses the same `\r\n|\r|\n` alternation.
+    _newline: $ => /\r\n|\r|\n/,
 
     // ---- Comment ----
     //
@@ -127,7 +131,7 @@ module.exports = grammar({
     // `#` is ordinary content. The token captures the whole line
     // including the trailing newline to beat `_top_scalar_text` at the
     // lexer's longest-match step.
-    comment: $ => token(prec(1, /##[^\r\n]*\r?\n/)),
+    comment: $ => token(prec(1, /##[^\r\n]*(\r\n|\r|\n)/)),
 
     // ---- Object pair ----
     //
@@ -330,12 +334,12 @@ module.exports = grammar({
     empty_double_paren: $ => seq(token(prec(5, '(())')), $._newline),
 
     // ---- Multi-line compounds ----
-    open_brace:    $ => token(prec(4, /\{[ \t]*\r?\n/)),
+    open_brace:    $ => token(prec(4, /\{[ \t]*(\r\n|\r|\n)/)),
     close_brace:   $ => seq(token(prec(4, '}')),    $._strict_eol),
-    open_bracket:  $ => token(prec(4, /\[[ \t]*\r?\n/)),
+    open_bracket:  $ => token(prec(4, /\[[ \t]*(\r\n|\r|\n)/)),
     close_bracket: $ => seq(token(prec(4, ']')),    $._strict_eol),
-    open_paren:    $ => token(prec(4, /\([ \t]*\r?\n/)),
-    open_dparen:   $ => token(prec(5, /\(\([ \t]*\r?\n/)),
+    open_paren:    $ => token(prec(4, /\([ \t]*(\r\n|\r|\n)/)),
+    open_dparen:   $ => token(prec(5, /\(\([ \t]*(\r\n|\r|\n)/)),
     close_paren:   $ => $._stripped_close,
     close_dparen:  $ => $._verbatim_close,
 
@@ -502,7 +506,7 @@ module.exports = grammar({
     // `top_scalar` — bare-scalar at the document root. Forbids `:` so
     // that pair-shaped lines always parse as `object_pair`.
     top_scalar: $ => $._top_scalar_text,
-    _top_scalar_text: $ => token(/[^\s:\{\[\(\r\n][^:\r\n]*\r?\n/),
+    _top_scalar_text: $ => token(/[^\s:\{\[\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(
@@ -517,7 +521,7 @@ module.exports = grammar({
       $.close_dparen,
     ),
 
-    multiline_content_line: $ => token(prec(-1, /[^\r\n]*\r?\n/)),
+    multiline_content_line: $ => token(prec(-1, /[^\r\n]*(\r\n|\r|\n)/)),
 
     // ---- Scalar (default value body, until end of line) ----
     scalar: $ => seq(
@@ -567,12 +571,12 @@ module.exports = grammar({
     //
     // Integer forms (§ 3.6): hex, octal, binary, decimal with underscores.
     integer: $ => token(prec(2,
-      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|[0-9]([_]?[0-9])*)[ \t]*\r?\n/
+      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
     )),
 
     // Float forms (§ 3.6): decimal-point form or exponent-only form.
     float: $ => token(prec(3,
-      /([+-]?[0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?[0-9]([_]?[0-9])*[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*\r?\n/
+      /([+-]?[0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?[0-9]([_]?[0-9])*[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
     )),
 
     // ---- Keywords ----

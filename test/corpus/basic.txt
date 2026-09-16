@@ -38,3 +38,42 @@ nothing:
     key: (key)
     separator: (sep_string)
     value: (empty_value)))
+
+==================
+§ 3.2: a lone CR is a valid line terminator, same as LF or CRLF
+==================
+a: 1b: 2
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+§ 3.2: CRLF, lone CR, and LF are freely mixed in one document
+==================
+a: 1
+b: 2c: 3
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
