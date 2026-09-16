@@ -30,3 +30,32 @@ deeply.nested.path.value: hi
       (dotted_key))
     separator: (sep_string)
     value: (scalar)))
+
+==================
+A quoted segment's own dot is flat content, not a path split (spec 0.7.0 § 5.3.3)
+==================
+"a.b": 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Quoting applies per dotted-path segment (spec 0.7.0 § 5.3.3)
+==================
+a."b.c".d: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (dotted_key
+        (quoted_key_segment)))
+    separator: (sep_string)
+    value: (integer)))

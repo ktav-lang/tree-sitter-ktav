@@ -91,3 +91,51 @@ meta: {id:: raw-id, name: alice}
         separator: (sep_string)
         value: (inline_value
           (inline_scalar))))))
+
+==================
+Quoted inline key: `,` inside it does not separate inline pairs (spec 0.7.0 § 5.3.3)
+==================
+k: {"a,b": 1, c: 2}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key
+          (quoted_key_segment))
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar)))
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar))))))
+
+==================
+Quoted inline key: `}` inside it does not close the inline object (spec 0.7.0 § 5.3.3)
+==================
+k: {"a}b": 1, c: 2}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (inline_object
+      (inline_pair
+        key: (key
+          (quoted_key_segment))
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar)))
+      (inline_pair
+        key: (key)
+        separator: (sep_string)
+        value: (inline_value
+          (inline_scalar))))))

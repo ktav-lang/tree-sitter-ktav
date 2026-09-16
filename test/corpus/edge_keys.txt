@@ -59,3 +59,80 @@ ratio: 1:2:3
     key: (key)
     separator: (sep_string)
     value: (scalar)))
+
+==================
+Quoted key segments: all three delimiters, self-escaped (spec 0.7.0 § 5.3.3)
+==================
+"say \"hi\"": 1
+'don\'t': 1
+`a\`b`: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Quoted key content is never trimmed (spec 0.7.0 § 5.3.3, § 4)
+==================
+"first name": alice
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (scalar)))
+
+==================
+A quote NOT at the start of the segment stays an ordinary bare key byte
+(spec 0.7.0 § 5.3.3 positional rule — conformant, pre-existing behaviour)
+==================
+"port": 1
+port": 2
+
+---
+
+(source_file
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer))
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+Nothing may follow a quoted segment's closer: InvalidKey (spec 0.7.0 § 5.3.3)
+:error
+==================
+"a" "b": 1
+
+---
+
+(source_file
+  (ERROR
+    (quoted_key_segment))
+  (object_pair
+    key: (key
+      (quoted_key_segment))
+    separator: (sep_string)
+    value: (integer)))
