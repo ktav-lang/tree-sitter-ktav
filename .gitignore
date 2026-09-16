@@ -29,3 +29,6 @@ tree-sitter-ktav.wasm
 # NOTE: src/parser.c, src/grammar.json, src/node-types.json, and the
 # tree_sitter/ headers ARE checked in — they are the generated parser
 # artifact that downstream Rust / Node consumers depend on.
+
+# /wrush task worktrees — always created here, in-tree
+/worktrees/
