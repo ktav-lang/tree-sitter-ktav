@@ -294,3 +294,28 @@ o: {
         value: (scalar))
       (close_brace))))
 
+==================
+§ 3.1: exactly one leading byte-order mark is skipped
+==================
+﻿a: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
+§ 3.1: only the very first BOM is skipped — a second one is ordinary key content
+==================
+﻿﻿a: 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))

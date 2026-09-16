@@ -98,7 +98,16 @@ module.exports = grammar({
     // the root may be either an Object or an Array. Tree-sitter accepts
     // both kinds of line anywhere; semantic dispatch is left to the
     // reference parser.
-    source_file: $ => repeat($._line),
+    //
+    // Spec 0.7.0 § 3.1: a conforming parser MUST skip exactly one leading
+    // U+FEFF byte-order mark if it is the very first code point of the
+    // document. This is a guaranteed grammar property, not error-recovery
+    // luck: `optional()` means at most one BOM is ever consumed, and only
+    // at offset 0 (the very first token `source_file` attempts). A second
+    // BOM, or one anywhere else, is ordinary content (§ 3.1) — already
+    // handled correctly since U+FEFF is not excluded from any key/scalar
+    // content class.
+    source_file: $ => seq(optional(/\uFEFF/), repeat($._line)),
 
     // ---- Top-level lines ----
     _line: $ => choice(
