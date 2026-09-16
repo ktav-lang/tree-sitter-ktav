@@ -9,6 +9,9 @@
 ; ---- Keys ----
 (key) @property
 (dotted_key) @property
+; A quoted key segment (spec 0.7.0 § 5.3.3) — the inner, more specific
+; capture distinguishes it from a bare key's plain `@property` text.
+(quoted_key_segment) @string.special.key
 "." @punctuation.delimiter
 
 ; ---- Pair separators ----
