@@ -84,8 +84,7 @@ meta: {id:: raw-id, name: alice}
       (inline_pair
         key: (key)
         separator: (sep_raw)
-        value: (inline_value
-          (inline_scalar)))
+        value: (inline_raw_scalar))
       (inline_pair
         key: (key)
         separator: (sep_string)

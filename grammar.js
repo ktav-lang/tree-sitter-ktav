@@ -392,10 +392,29 @@ module.exports = grammar({
     // The value is optional: `{x:, y: 1}` and `{empty:}` are valid —
     // a separator immediately followed by `,` or `}` is an empty value
     // (spec 0.5.0 § 5.8).
-    inline_pair: $ => seq(
-      field('key', $.key),
-      field('separator', choice($.sep_raw, $.sep_string)),
-      optional(field('value', $.inline_value)),
+    // Spec 0.7.0 § 4: the two separators have DIFFERENT value branches.
+    // After `::` the body is the dedicated <inline-raw-scalar> — literal
+    // data to the first unescaped `,` / `}` / `]`, escapes processed, an
+    // initial `{`/`[` literal — "This production does NOT dispatch through
+    // <inline-value> or <inline-scalar>" (spec.md:588-596); "the `::`
+    // marker therefore cannot open or recurse into a compound"
+    // (§ 5.8.5, spec.md:1573-1577). After `:` the value goes through the
+    // full <inline-value> dispatch (§ 5.8.5: "The dispatch rules below
+    // apply only after a plain `:` separator"). Empty value after either
+    // separator is the explicit empty String (§ 5.8.2). Inline pairs, unlike
+    // multi-line pairs, require no whitespace after the separator (§ 4,
+    // spec.md:620-624).
+    inline_pair: $ => choice(
+      seq(
+        field('key', $.key),
+        field('separator', $.sep_raw),
+        optional(field('value', $.inline_raw_scalar)),
+      ),
+      seq(
+        field('key', $.key),
+        field('separator', $.sep_string),
+        optional(field('value', $.inline_value)),
+      ),
     ),
 
     _inline_item_list: $ => seq(
@@ -469,6 +488,17 @@ module.exports = grammar({
     // openers `{`/`[` (so a value starting with an opener is a nested
     // compound), plus the usual `\` `,` `}` `]` / CR / LF. Subsequent
     // bytes allow `{`/`[` as literal content.
+    // Raw inline scalar body (spec 0.7.0 § 4 <inline-raw-scalar>,
+    // § 5.8.5): identical to `inline_scalar` except the FIRST byte may be
+    // `{` or `[` — literal data, because `::` never dispatches to a
+    // compound. Terminators are the same unescaped `,` / `}` / `]`
+    // (line-end inside an inline compound is the § 6.11 error).
+    inline_raw_scalar: $ => seq(
+      choice($.escape_sequence, $._inline_raw_scalar_head),
+      repeat(choice($.escape_sequence, $._inline_scalar_text)),
+    ),
+    _inline_raw_scalar_head: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\\,\}\]\r\n][^\\,\}\]\r\n]*/),
+
     _inline_scalar_head: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\\,\{\[\}\]\r\n][^\\,\}\]\r\n]*/),
 
     // Continuation text after the head (or after an escape): any byte
@@ -557,7 +587,15 @@ module.exports = grammar({
     // those opening bytes at position 0 to avoid the greedy-token
     // ambiguity. Lines starting with `(` are handled by multiline or
     // empty-paren rules likewise.
-    _scalar_text: $ => /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\{\[\(\r\n][^\r\n]*/,
+    // `(` / `((` followed by text is a scalar, not a multiline opener:
+    // the openers require `(` (ws) &line-end (§ 4 <value-start>), and
+    // § 5.8.5 (spec.md:1579-1588) makes leading parens ordinary content.
+    // The `)` exclusion keeps `()`/`(())` unambiguous with the
+    // empty-paren tokens (higher lexical precedence, same length).
+    _scalar_text: $ => choice(
+      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\{\[\(\r\n][^\r\n]*/,
+      /\([^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n\)][^\r\n]*/,
+    ),
 
     // ---- Number literals ----
     //

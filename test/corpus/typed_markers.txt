@@ -20,3 +20,18 @@ template:: {issue.id}.tpl
     key: (key)
     separator: (sep_raw)
     value: (raw_scalar)))
+
+==================
+Raw inline scalar after :: treats a leading { as literal data (spec 0.7.0 § 4 <inline-raw-scalar>, § 5.8.5; fixture raw_marker/inline_leading_bracket)
+==================
+{a:: {abc}
+
+---
+
+(source_file
+  (top_array_item
+    value: (inline_object
+      (inline_pair
+        key: (key)
+        separator: (sep_raw)
+        value: (inline_raw_scalar)))))

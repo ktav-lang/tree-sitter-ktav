@@ -275,11 +275,30 @@
         "required": false,
         "types": [
           {
+            "type": "inline_raw_scalar",
+            "named": true
+          },
+          {
             "type": "inline_value",
             "named": true
           }
         ]
       }
+    }
+  },
+  {
+    "type": "inline_raw_scalar",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        }
+      ]
     }
   },
   {

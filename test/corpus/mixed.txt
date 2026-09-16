@@ -66,3 +66,44 @@ to the service
       (multiline_content_line)
       (multiline_content_line)
       (close_dparen))))
+
+==================
+Whole-line scalar starting with ( / (( followed by text is a String, not a multiline opener (spec 0.7.0 § 4 <value-start>/<scalar-body>, § 5.8.5; fixture inline/paren_scalar_is_string.canonical)
+==================
+cfg: {
+    a:: (
+    b:: ((
+    c: 1
+    d: (tail
+    e: ((double-tail
+}
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (compound_object
+      (open_brace)
+      (object_pair
+        key: (key)
+        separator: (sep_raw)
+        value: (raw_scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_raw)
+        value: (raw_scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (integer))
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (object_pair
+        key: (key)
+        separator: (sep_string)
+        value: (scalar))
+      (close_brace))))
