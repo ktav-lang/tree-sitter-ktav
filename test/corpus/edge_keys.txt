@@ -121,6 +121,21 @@ port": 2
     value: (integer)))
 
 ==================
+A spaced key is ONE segment: only its very first byte is positional.
+A quote opening a LATER glued word is ordinary content, not a new
+quoted segment (spec 0.7.0 § 5.3.3 positional rule)
+==================
+foo "bar": 1
+
+---
+
+(source_file
+  (object_pair
+    key: (key)
+    separator: (sep_string)
+    value: (integer)))
+
+==================
 Nothing may follow a quoted segment's closer: InvalidKey (spec 0.7.0 § 5.3.3)
 :error
 ==================

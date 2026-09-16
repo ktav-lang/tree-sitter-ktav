@@ -148,17 +148,29 @@ module.exports = grammar({
     ),
 
     // A key may contain internal whitespace (spec 0.5.0 § 4): the run of
-    // space-separated segments up to the separator is one key
-    // (`multi word key: value`). The inter-segment spaces are `extras`,
+    // space-separated words up to the separator is one key
+    // (`multi word key: value`). The inter-word spaces are `extras`,
     // so the `key` node still spans the whole text with no named children
-    // (renders as `(key)`, same as a single-segment key).
+    // (renders as `(key)`, same as a single-word key).
     //
-    // Bare only: a leading quote in ANY of these glued words always
-    // opens a `quoted_key_segment` instead (§ 5.3.3's positional rule),
-    // so this repetition cannot combine with quoting — that is exactly
-    // how `"a" "b": 1` becomes an `InvalidKey` (see `quoted_key_segment`
-    // below) instead of the one-key parse this grammar used to produce.
-    _spaced_key: $ => prec.left(repeat1($._bare_key_segment)),
+    // Per § 5.3.3's positional rule, the whole glued-and-spaced run is
+    // ONE segment — the rule looks only at the first code point of the
+    // segment's raw text, i.e. the first byte of the FIRST word. So only
+    // that first word excludes a leading quote (`_bare_key_segment`);
+    // every later word is a continuation of the same bare segment and a
+    // leading quote there is ordinary content (`_bare_key_segment_cont`,
+    // identical to `_bare_key_segment` but without the first-byte quote
+    // exclusion). `foo "bar": 1` is thus the single bare key `foo "bar"`
+    // (quote is mid-segment). `"a" "b": 1` is unaffected: its first word
+    // starts with a quote, so `_bare_key_segment` cannot lex it at all —
+    // the FIRST word alone forces the `quoted_key_segment` alternative
+    // of `key`, and a second, space-separated quoted/bare word after a
+    // complete quoted key has nothing left to attach to, producing the
+    // `InvalidKey` `ERROR` (see `quoted_key_segment` below).
+    _spaced_key: $ => prec.left(seq(
+      $._bare_key_segment,
+      repeat($._bare_key_segment_cont),
+    )),
 
     // Spec 0.7.0 § 5.3.3: each dot-separated piece is independently
     // bare or quoted — the positional rule is "re-applied fresh at the
@@ -198,6 +210,28 @@ module.exports = grammar({
         /\\[\\,\}\]\{\[nr.:]/,
       )),
     )),
+
+    // Continuation word of a spaced key (§ 5.3.3), used only in
+    // `_spaced_key`'s repetition tail — i.e. every word AFTER the first
+    // one. Identical to `_bare_key_segment` except a leading quote is
+    // NOT excluded: the positional rule only looks at the first code
+    // point of the whole segment (the first byte of the FIRST word), so
+    // a quote starting a later glued word is ordinary content, same as
+    // a quote at any non-initial position already is. This is exactly
+    // `_bare_key_segment`'s own non-first-byte class, applied uniformly
+    // (no separate first-byte restriction).
+    //
+    // This never conflicts with `quoted_key_segment` at parse time:
+    // `quoted_key_segment` is only reachable as the very first token of
+    // a `key` or right after a dotted-path `.`, while
+    // `_bare_key_segment_cont` is only reachable inside `_spaced_key`'s
+    // tail (after its leading `_bare_key_segment`) — two disjoint LR
+    // states, so tree-sitter never has to choose between them for the
+    // same input position, even though both can start with a quote.
+    _bare_key_segment_cont: $ => token(repeat1(choice(
+      /[^\s\[\]\{\}\(\):#,.\r\n\\]/,
+      /\\[\\,\}\]\{\[nr.:]/,
+    ))),
 
     // Quoted key segment (spec 0.7.0 § 5.3.3, § 4): opened by `"`, `'`,
     // or `` ` ``, running to the first UNescaped occurrence of that
