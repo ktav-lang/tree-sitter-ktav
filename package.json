@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-ktav",
-  "version": "0.6.1",
+  "version": "0.7.2",
   "description": "Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format",
   "keywords": [
     "parser",
