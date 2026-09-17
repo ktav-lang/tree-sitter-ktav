@@ -165,8 +165,7 @@ fn conformance_valid_fixtures_parse_cleanly() {
     let mut allowed_failures: Vec<String> = Vec::new();
     let total = files.len();
     for path in &files {
-        let bytes = fs::read(path)
-            .unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
+        let bytes = fs::read(path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
         let tree = match parser.parse(&bytes, None) {
             Some(t) => t,
             None => {
@@ -237,8 +236,7 @@ fn conformance_invalid_fixtures_do_not_panic() {
     let total = files.len();
     let mut with_grammar_errors = 0usize;
     for path in &files {
-        let bytes = fs::read(path)
-            .unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
+        let bytes = fs::read(path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
         // tree-sitter must always produce *some* tree (it's
         // error-recovering by design); we only assert no panic.
         let tree = parser
