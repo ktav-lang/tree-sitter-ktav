@@ -67,7 +67,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # windows-2022, not windows-latest. `windows-latest` now resolves
+        # to Windows Server 2025, and the node-gyp bundled with the npm
+        # that ships in Node 20 (node-gyp 10.1.0) cannot discover Visual
+        # Studio on that image: "Could not find any Visual Studio
+        # installation to use". Nothing in this repository is at fault —
+        # the other Windows job on the same image passes.
+        #
+        # This is a pin, not a fix. Drop it once this job runs on a Node
+        # whose npm bundles node-gyp 11.x, which discovers VS on 2025.
+        os: [ubuntu-latest, macos-latest, windows-2022]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
