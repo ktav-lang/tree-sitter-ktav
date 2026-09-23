@@ -28,7 +28,19 @@ jobs:
     name: Publish to crates.io
     needs: verify
     runs-on: ubuntu-latest
+    # crates.io Trusted Publishing (OIDC): the workflow trades its
+    # short-lived GitHub OIDC identity for a crates.io token that
+    # expires within the run. No long-lived registry token is stored
+    # in the repository. crates.io side — Settings → Trusted
+    # Publishing → "Add a new Trusted Publisher" on the
+    # `tree-sitter-ktav` crate: Repository owner `ktav-lang`,
+    # Repository name `tree-sitter-ktav`, Workflow filename
+    # `release.yml`, Environment name `crates-io` (must match the
+    # `environment:` key below).
     environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,9 +49,12 @@ jobs:
       - run: npm install -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - uses: dtolnay/rust-toolchain@stable
+      - name: Exchange the OIDC identity for a crates.io token
+        uses: rust-lang/crates-io-auth-action@v1
+        id: auth
       - name: cargo publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         # `tree-sitter generate` re-emits `src/parser.c` which is
         # already committed but may differ in incidental whitespace
         # or version banners — `--allow-dirty` lets the publish
@@ -51,6 +66,9 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publishing (OIDC) and provenance
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,10 +78,15 @@ jobs:
       - run: npm install -g tree-sitter-cli@0.26.8
       - run: tree-sitter generate
       - run: npm install
+      # npm tries OIDC trusted publishing first and falls back to
+      # NPM_TOKEN when no trusted publisher is configured (e.g. the
+      # very first publish). npmjs.com side — package Settings →
+      # Trusted Publisher → GitHub Actions, repo `ktav-lang/tree-sitter-ktav`,
+      # workflow `release.yml`, environment `npm`.
       - name: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: npm publish --access public --provenance
 
   github-release:
     name: GitHub Release
