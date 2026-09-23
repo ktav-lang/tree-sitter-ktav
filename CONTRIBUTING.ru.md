@@ -1,6 +1,6 @@
 # Вклад в tree-sitter-ktav
 
-**Языки:** [English](CONTRIBUTING.md) · **Русский** · [简体中文](CONTRIBUTING.zh.md)
+**Languages:** [English](CONTRIBUTING.md) · **Русский** · [简体中文](CONTRIBUTING.zh.md)
 
 ## Основные правила
 

@@ -1,5 +1,5 @@
 //! Conformance test: walk the language-agnostic Ktav test suite under
-//! `spec/versions/0.7/tests/` (a git submodule of `ktav-lang/spec`) and
+//! `spec/versions/0.8/tests/` (a git submodule of `ktav-lang/spec`) and
 //! exercise the tree-sitter grammar against every fixture.
 //!
 //! For tree-sitter we cannot validate full structural conformance the
@@ -44,7 +44,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Valid fixtures that the tree-sitter grammar does NOT currently parse
-/// cleanly, listed by path suffix relative to `spec/versions/0.7/tests/`.
+/// cleanly, listed by path suffix relative to `spec/versions/0.8/tests/`.
 /// Every entry MUST carry a justification comment naming the gap and the
 /// spec section; a fixture failing that is NOT listed here is a hard
 /// test failure by design (never a tolerated count). Removing an entry
@@ -72,20 +72,11 @@ const KNOWN_VALID_FAILURES: &[&str] = &[
     // missing whitespace after the separator (§ 6.10). Same G5
     // decision.
     "valid/top_level_array/glued_colon_first_item.canonical.ktav",
-    //
-    // NOT G5: the value contains a literal NUL byte inside a multiline
-    // verbatim body. tree-sitter's lexer cannot lex a token across a
-    // NUL byte (byte 0 doubles as the EOF sentinel), so
-    // multiline_content_line ([^\r\n]*(\r\n|\r|\n)) fails on the line
-    // "x\0y". A real fix needs an external content-line token that
-    // disambiguates true EOF via lexer->eof(); documented here rather
-    // than half-fixed in the grammar.
-    "valid/key_escaping/unicode_escape_nul_inline_value.canonical.ktav",
 ];
 
 fn spec_tests_dir() -> Option<PathBuf> {
     let manifest = env!("CARGO_MANIFEST_DIR");
-    let p = Path::new(manifest).join("spec/versions/0.7/tests");
+    let p = Path::new(manifest).join("spec/versions/0.8/tests");
     if p.join("valid").is_dir() && p.join("invalid").is_dir() {
         Some(p)
     } else {

@@ -3,7 +3,7 @@
 > 面向 [Ktav (כְּתָב)](https://github.com/ktav-lang/spec)（书面配置
 > 格式）的 [tree-sitter](https://tree-sitter.github.io/) 语法。
 
-**语言：** [English](README.md) · [Русский](README.ru.md) · **简体中文**
+**Languages:** [English](README.md) · [Русский](README.ru.md) · **简体中文**
 
 **演练场：** 在浏览器中互转 JSON / YAML / TOML / INI ⇄ Ktav — **[ktav-lang.github.io](https://ktav-lang.github.io/)**。
 
@@ -32,12 +32,12 @@ JSON 相同（标量、数组、对象、`null`、布尔值），但字符串无
 
 ## 安装
 
-### Rust
+### Rust（`tree-sitter` crate）
 
 ```toml
 [dependencies]
-tree-sitter      = "0.25"
-tree-sitter-ktav = "0.6.0"
+tree-sitter         = "0.25"
+tree-sitter-ktav    = "0.8.0"
 ```
 
 ```rust
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Node.js
+### Node.js（`tree-sitter` 包）
 
 ```bash
 npm install tree-sitter tree-sitter-ktav
@@ -151,8 +151,8 @@ tree-sitter 的编辑器都可以在解析器构建后直接使用。
 git clone https://github.com/ktav-lang/tree-sitter-ktav.git
 cd tree-sitter-ktav
 npm install
-npx tree-sitter generate     # 生成 src/parser.c
-npx tree-sitter test         # 运行语料库
+npx tree-sitter generate     # writes src/parser.c
+npx tree-sitter test         # runs the corpus
 ```
 
 `src/parser.c`、`src/grammar.json`、`src/node-types.json` 与
@@ -161,15 +161,17 @@ CLI 即可构建。
 
 ## 状态
 
-`0.6.0` — 实现 [Ktav 0.6.0](https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md)。
-语法接受所有合法的 Ktav 0.6.0 文档（对 spec 仓库下
+`0.8.0` — 实现 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md)。
+语法接受所有合法的 Ktav 0.8.0 文档（对 spec 仓库下
 `tests/valid/*.ktav` 全部用例验证通过）。它是一个语法接受器，而非
-严格的规范校验器——少数语法接受但规范拒绝的边界情况（主要是 § 6.10
-"标记后必须有空格"）见 [`CHANGELOG.md`](CHANGELOG.md)。
+严格的规范校验器——少数语法接受但规范拒绝的边界情况（主要是
+§ 6.10 “标记后必须有空格”）见 [`CHANGELOG.zh.md`](CHANGELOG.zh.md)
+的“已知限制”一节。
 
 ## 许可证
 
-MIT OR Apache-2.0。详见 [LICENSE-MIT](LICENSE-MIT) 和 [LICENSE-APACHE](LICENSE-APACHE)。
+基于 **MIT OR Apache-2.0** 双重许可 —— 详见
+[LICENSE-MIT](LICENSE-MIT) 与 [LICENSE-APACHE](LICENSE-APACHE)。
 
 ## 其他 Ktav 仓库
 

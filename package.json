@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-ktav",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format",
   "keywords": [
     "parser",
@@ -34,6 +34,7 @@
     "node-gyp-build": "^4.8.0"
   },
   "devDependencies": {
+    "@ktav-lang/polydoc": "0.1.0",
     "tree-sitter-cli": "^0.26.0",
     "prebuildify": "^6.0.0"
   },
@@ -46,6 +47,8 @@
     }
   },
   "scripts": {
+    "docs:build": "node scripts/build-docs.mjs",
+    "docs:check": "node scripts/build-docs.mjs --check",
     "install": "node-gyp-build",
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground",

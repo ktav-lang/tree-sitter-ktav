@@ -764,7 +764,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "_eol"
         }
       ]
     },
@@ -793,7 +793,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "_eol"
         }
       ]
     },
@@ -1420,15 +1420,8 @@
       ]
     },
     "multiline_content_line": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": -1,
-        "content": {
-          "type": "PATTERN",
-          "value": "[^\\r\\n]*(\\r\\n|\\r|\\n)"
-        }
-      }
+      "type": "SYMBOL",
+      "name": "_content_line"
     },
     "scalar": {
       "type": "SEQ",
@@ -1439,7 +1432,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "_eol"
         }
       ]
     },
@@ -1452,7 +1445,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "_eol"
         }
       ]
     },
@@ -1517,7 +1510,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "_eol"
         }
       ]
     },
@@ -1574,11 +1567,19 @@
     },
     {
       "type": "SYMBOL",
+      "name": "_eol"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_stripped_close"
     },
     {
       "type": "SYMBOL",
       "name": "_verbatim_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_content_line"
     }
   ],
   "inline": [],

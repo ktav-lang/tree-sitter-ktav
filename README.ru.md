@@ -1,10 +1,10 @@
 # tree-sitter-ktav
 
 > Грамматика [tree-sitter](https://tree-sitter.github.io/) для
-> [Ktav (כְּתָב)](https://github.com/ktav-lang/spec) — Written
-> Configuration Format.
+> [Ktav (כְּתָב)](https://github.com/ktav-lang/spec) — формата
+> письменной конфигурации.
 
-**Языки:** [English](README.md) · **Русский** · [简体中文](README.zh.md)
+**Languages:** [English](README.md) · **Русский** · [简体中文](README.zh.md)
 
 **Песочница:** конвертация JSON / YAML / TOML / INI ⇄ Ktav прямо в браузере — **[ktav-lang.github.io](https://ktav-lang.github.io/)**.
 
@@ -36,12 +36,12 @@ VS Code, Zed, …) используют его для подсветки син�
 
 ## Установка
 
-### Rust
+### Rust (крейт `tree-sitter`)
 
 ```toml
 [dependencies]
-tree-sitter      = "0.25"
-tree-sitter-ktav = "0.6.0"
+tree-sitter         = "0.25"
+tree-sitter-ktav    = "0.8.0"
 ```
 
 ```rust
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Node.js
+### Node.js (пакет `tree-sitter`)
 
 ```bash
 npm install tree-sitter tree-sitter-ktav
@@ -75,7 +75,7 @@ console.log(tree.rootNode.toString());
 
 ## Интеграция с редакторами
 
-### Neovim (через [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter))
+### Neovim (с [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter))
 
 Пока грамматика не зарегистрирована в апстриме, добавьте вручную:
 
@@ -155,8 +155,8 @@ source = { git = "https://github.com/ktav-lang/tree-sitter-ktav", rev = "main" }
 git clone https://github.com/ktav-lang/tree-sitter-ktav.git
 cd tree-sitter-ktav
 npm install
-npx tree-sitter generate     # генерирует src/parser.c
-npx tree-sitter test         # запускает корпус
+npx tree-sitter generate     # writes src/parser.c
+npx tree-sitter test         # runs the corpus
 ```
 
 Файлы `src/parser.c`, `src/grammar.json`, `src/node-types.json` и
@@ -165,17 +165,19 @@ npx tree-sitter test         # запускает корпус
 
 ## Статус
 
-`0.6.0` — реализует [Ktav 0.6.0](https://github.com/ktav-lang/spec/blob/main/versions/0.6/spec.md).
-Грамматика принимает любой валидный документ Ktav 0.6.0 (проверено на
+`0.8.0` — реализует [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+Грамматика принимает любой валидный документ Ktav 0.8.0 (проверено на
 всех фикстурах `tests/valid/*.ktav` из spec-репозитория). Это
 синтаксический акцептор, а не строгий валидатор — небольшое число
 патологических случаев, которые грамматика принимает, а спецификация
-запрещает (в основном § 6.10, отсутствие пробела после маркера),
-перечислены в [`CHANGELOG.md`](CHANGELOG.md).
+отвергает (в основном отсутствие пробела после маркера — § 6.10),
+перечислено в разделе «Известные ограничения»
+[`CHANGELOG.ru.md`](CHANGELOG.ru.md).
 
 ## Лицензия
 
-MIT OR Apache-2.0. См. [LICENSE-MIT](LICENSE-MIT) и [LICENSE-APACHE](LICENSE-APACHE).
+Двойная лицензия — **MIT OR Apache-2.0**; см.
+[LICENSE-MIT](LICENSE-MIT) и [LICENSE-APACHE](LICENSE-APACHE).
 
 ## Другие репозитории Ktav
 

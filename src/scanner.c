@@ -1,6 +1,6 @@
 // Tree-sitter external scanner for Ktav.
 //
-// Emits four tokens that the LR(1) grammar generated from grammar.js
+// Emits six tokens that the LR(1) grammar generated from grammar.js
 // cannot express on its own:
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
@@ -14,6 +14,11 @@
 //                 apply unchanged. Its sole purpose is to MAKE A PARSE
 //                 FAIL when a writer omits the mandatory whitespace,
 //                 e.g. `key:value` (§ 6.10 of the spec).
+//
+//   _eol         — a line terminator (LF, CR, CRLF) or a true EOF, with
+//                 optional leading horizontal whitespace. The end of a
+//                 scalar, keyword or inline compound. Split from
+//                 `_strict_eol` only to keep closer-strictness legible.
 //
 //   _strict_eol — consumes a run of `is_h_ws` (§ 3.3 whitespace minus
 //                 the two line terminators) followed by `\r`, `\n`,
@@ -29,14 +34,22 @@
 //                      a line terminator (or EOF). Only valid inside
 //                      the body of a `multiline_stripped`. A `))` line
 //                      in that context is NOT a close — the scanner
-//                      declines and the line falls through to the
-//                      `multiline_content_line` regex token.
+//                      declines and the line falls through to
+//                      CONTENT_LINE.
 //
 //   _verbatim_close  — context-sensitive closer for `((...))` multi-line
 //                      strings. Matches `))` followed by `is_h_ws*` then
 //                      a line terminator (or EOF). Only valid inside
 //                      `multiline_verbatim`. A single `)` line in that
-//                      context falls through to `multiline_content_line`.
+//                      context falls through to CONTENT_LINE.
+//
+//   _content_line    — a `multiline_content_line` body line: everything
+//                      up to the line terminator, THEN the terminator.
+//                      External (not a grammar regex) so it can call
+//                      `lexer->eof()` and treat an embedded NUL byte as
+//                      ordinary content instead of end-of-input — see
+//                      the block below for why the regex it replaced
+//                      couldn't do that. Task #243.
 //
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
@@ -44,11 +57,14 @@
 
 #include "tree_sitter/parser.h"
 
+// Order MUST match the `externals` array in grammar.js.
 enum TokenType {
     MARKER_WS,
     STRICT_EOL,
+    EOL,
     STRIPPED_CLOSE,
     VERBATIM_CLOSE,
+    CONTENT_LINE,
 };
 
 void *tree_sitter_ktav_external_scanner_create(void) {
@@ -116,7 +132,11 @@ static bool consume_line_terminator(TSLexer *lexer) {
         lexer->mark_end(lexer);
         return true;
     }
-    if (c == 0) {
+    // A true end-of-input terminates the final line (§ 3.2). `lookahead`
+    // is 0 for BOTH real EOF and an embedded NUL byte, so this MUST ask
+    // `eof()` — testing `c == 0` would accept a literal NUL as a line
+    // terminator, which § 3.2 does not list as one.
+    if (lexer->eof(lexer)) {
         lexer->mark_end(lexer);
         return true;
     }
@@ -138,7 +158,7 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
         int32_t c = lexer->lookahead;
         // Spec 0.7.0 § 4 `<sep-end> ::= 1*ws | &line-end`: any of the 25
         // § 3.3 whitespace code points satisfies "1 ws", not just ASCII.
-        if (is_ktav_ws(c) || c == 0) {
+        if (is_ktav_ws(c) || lexer->eof(lexer)) {
             lexer->mark_end(lexer);
             lexer->result_symbol = MARKER_WS;
             return true;
@@ -157,6 +177,17 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
     // STRIPPED_CLOSE so `))` is never split into a `)` close + leftover.
     // (In practice the two are mutually exclusive per parse state, so
     // ordering matters only for defensive correctness.)
+    //
+    // On failure this falls through to the CONTENT_LINE check below
+    // rather than returning: a non-`))` line inside verbatim becomes
+    // content, and CONTENT_LINE is now also an external token (it used
+    // to be a plain regex that tree-sitter retried automatically on
+    // external-scanner failure; now that it needs `lexer->eof()` too —
+    // see CONTENT_LINE below — this function must do that retry itself).
+    // Whatever was speculatively consumed above (e.g. a lone `)`) is
+    // still part of the eventual token: CONTENT_LINE's own mark_end
+    // covers everything from this call's true start, not from wherever
+    // this block gave up.
     if (valid_symbols[VERBATIM_CLOSE]) {
         while (is_h_ws(lexer->lookahead)) {
             lexer->advance(lexer, false);
@@ -171,15 +202,12 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
                 }
             }
         }
-        // Fall through: a non-`))` line inside verbatim becomes content.
-        return false;
     }
 
     // _stripped_close — matches `[ \t]*)[ \t]*\r?\n` (or EOF). Only
     // valid inside `multiline_stripped`. A `))` line is NOT a stripped
     // close: we require the byte after the first `)` to NOT be another
-    // `)`, so `))` falls through to the `multiline_content_line`
-    // regex token.
+    // `)`, so `))` falls through to CONTENT_LINE below.
     if (valid_symbols[STRIPPED_CLOSE]) {
         while (is_h_ws(lexer->lookahead)) {
             lexer->advance(lexer, false);
@@ -193,39 +221,77 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
                 }
             }
         }
-        return false;
+    }
+
+    // _content_line — a multi-line-string body line: everything up to
+    // (not including) the line terminator, THEN the terminator itself.
+    // Deliberately does NOT strip leading/trailing horizontal whitespace
+    // the way `consume_line_terminator` does for the other tokens —
+    // whitespace on a content line is content, verbatim bodies exist
+    // specifically to preserve it byte-for-byte.
+    //
+    // A literal NUL byte is content, same as any other non-terminator
+    // byte. This is the one thing the regex it replaces
+    // (`/[^\r\n]*(\r\n|\r|\n)/`) could not do: tree-sitter's compiled
+    // character-class matcher treats `lookahead == 0` as end-of-input
+    // unconditionally, so the regex silently stopped at a NUL even with
+    // real bytes still following. Only `lexer->eof()` tells a true
+    // end-of-input apart from an embedded NUL. See task #243.
+    //
+    // A true EOF with no terminator fails, exactly like the regex it
+    // replaces — extending that would be a different, unscoped change.
+    if (valid_symbols[CONTENT_LINE]) {
+        for (;;) {
+            int32_t c = lexer->lookahead;
+            if (c == '\n' || c == '\r') {
+                break;
+            }
+            if (lexer->eof(lexer)) {
+                return false;
+            }
+            lexer->advance(lexer, false);
+        }
+        if (lexer->lookahead == '\n') {
+            lexer->advance(lexer, false);
+        } else {
+            lexer->advance(lexer, false); // '\r'
+            if (lexer->lookahead == '\n') {
+                lexer->advance(lexer, false);
+            }
+        }
+        lexer->mark_end(lexer);
+        lexer->result_symbol = CONTENT_LINE;
+        return true;
     }
 
     // _strict_eol — consume optional horizontal whitespace, then the
     // line terminator (LF, CRLF, or EOF). If a non-whitespace byte
     // appears before the line terminator, fail.
     if (valid_symbols[STRICT_EOL]) {
-        while (is_h_ws(lexer->lookahead)) {
-            lexer->advance(lexer, false);
-        }
-        int32_t c = lexer->lookahead;
-        if (c == '\n') {
-            lexer->advance(lexer, false);
-            lexer->mark_end(lexer);
+        if (consume_line_terminator(lexer)) {
             lexer->result_symbol = STRICT_EOL;
             return true;
         }
-        if (c == '\r') {
-            lexer->advance(lexer, false);
-            if (lexer->lookahead == '\n') {
-                lexer->advance(lexer, false);
-            }
-            lexer->mark_end(lexer);
-            lexer->result_symbol = STRICT_EOL;
+        return false;
+    }
+
+    // _eol — the line end for scalars, keywords and inline compounds.
+    // Behaviourally identical to _strict_eol; kept as a separate token so
+    // that the closer-strictness rule (§ 5.6.1) and ordinary end-of-value
+    // stay distinguishable in the grammar and in the parse tables.
+    //
+    // It exists because the grammar's `_newline` regex (/\r\n|\r|\n/) has
+    // no EOF alternative, so a bare scalar as the final value of a file
+    // with no trailing newline produced a MISSING `_newline` node AND lost
+    // its type (`scalar` instead of `integer`). The core accepts those
+    // documents, and an editor buffer very often has no final newline —
+    // see tests/eof_and_nul.rs.
+    if (valid_symbols[EOL]) {
+        if (consume_line_terminator(lexer)) {
+            lexer->result_symbol = EOL;
             return true;
         }
-        if (c == 0) {
-            // EOF as a line terminator (§ 3.2: trailing content of the
-            // final line need not be followed by a line separator).
-            lexer->mark_end(lexer);
-            lexer->result_symbol = STRICT_EOL;
-            return true;
-        }
+        return false;
     }
 
     return false;

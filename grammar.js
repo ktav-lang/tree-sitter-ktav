@@ -84,8 +84,10 @@ module.exports = grammar({
   externals: $ => [
     $._marker_ws,        // zero-width assertion after pair separators
     $._strict_eol,       // [ \t]*\r?\n  (or EOF) — for compound closers
+    $._eol,              // \r?\n (or EOF) — line end for scalars/keywords/inlines
     $._stripped_close,   // `)[ \t]*\r?\n` (or EOF) — only valid inside `(...)` body
     $._verbatim_close,   // `))[ \t]*\r?\n` (or EOF) — only valid inside `((...))` body
+    $._content_line,     // `[^\r\n]*\r?\n` — a multi-line-string body line (NUL is content)
   ],
 
   conflicts: $ => [],
@@ -373,14 +375,14 @@ module.exports = grammar({
       '{',
       optional($._inline_pair_list),
       '}',
-      $._newline,
+      $._eol,
     ),
 
     inline_array: $ => seq(
       '[',
       optional($._inline_item_list),
       ']',
-      $._newline,
+      $._eol,
     ),
 
     _inline_pair_list: $ => seq(
@@ -558,12 +560,18 @@ module.exports = grammar({
       $.close_dparen,
     ),
 
-    multiline_content_line: $ => token(prec(-1, /[^\r\n]*(\r\n|\r|\n)/)),
+    // External so it can distinguish a literal embedded NUL byte from a
+    // true end-of-input via `lexer->eof()` — the regex this replaced,
+    // `/[^\r\n]*(\r\n|\r|\n)/`, could not: tree-sitter's compiled
+    // character-class matcher treats `lookahead == 0` as end-of-input
+    // unconditionally, so it silently stopped at any embedded NUL. See
+    // task #243 and tests/eof_and_nul.rs.
+    multiline_content_line: $ => $._content_line,
 
     // ---- Scalar (default value body, until end of line) ----
     scalar: $ => seq(
       $._scalar_text,
-      $._newline,
+      $._eol,
     ),
 
     // `raw_scalar` is used exclusively after `::` (raw marker). It accepts
@@ -575,7 +583,7 @@ module.exports = grammar({
     // opening bytes to avoid lexer ambiguity in the non-raw value context.
     raw_scalar: $ => seq(
       $._raw_scalar_text,
-      $._newline,
+      $._eol,
     ),
     _raw_scalar_text: $ => /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n][^\r\n]*/,
 
@@ -627,7 +635,7 @@ module.exports = grammar({
     // ---- Keywords ----
     keyword: $ => seq(
       choice($.kw_null, $.kw_true, $.kw_false),
-      $._newline,
+      $._eol,
     ),
     kw_null:  $ => token(prec(3, 'null')),
     kw_true:  $ => token(prec(3, 'true')),

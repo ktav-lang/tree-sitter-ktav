@@ -382,6 +382,11 @@
     }
   },
   {
+    "type": "multiline_content_line",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "multiline_stripped",
     "named": true,
     "fields": {},
@@ -740,10 +745,6 @@
   },
   {
     "type": "kw_true",
-    "named": true
-  },
-  {
-    "type": "multiline_content_line",
     "named": true
   },
   {

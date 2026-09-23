@@ -11,6 +11,39 @@ For the format specification's own history, see the
 
 **Languages:** **English** · [Русский](CHANGELOG.ru.md) · [简体中文](CHANGELOG.zh.md)
 
+## Unreleased
+
+Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`); 0.8.0 adds no
+syntax over 0.7.0 — its § 5.2 leading-zero rule is a typing rule, outside a
+concrete syntax tree.
+The crate/package version moves to **0.8.0**, in step with the core and
+the specification (0.7.x was never tagged for this package).
+
+### Added
+
+- Quoted key segments (§ 5.3.3): a key may open with a backtick-quoted
+  segment instead of a bare one, distinguished from a bare key in
+  `queries/highlights.scm`.
+- The escape table is complete, at 14 forms (§ 3.7).
+- Exactly one leading byte-order mark is skipped (§ 3.1).
+
+### Fixed
+
+- The spaced-key positional rule applies per segment, not per word
+  (§ 5.3.3).
+- The full 25-code-point whitespace set (§ 3.3) is recognised and
+  trimmed at token edges, not the narrower ASCII-only set used before.
+- A lone CR is accepted as a valid line terminator (§ 3.2).
+- A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
+- Inline raw scalars after `::` get their own dedicated grammar rule
+  (§ 4, § 5.8.5) instead of falling through the generic scalar path.
+
+### Changed
+
+- Conformance suite walks the spec **0.8.0** corpus (was 0.6).
+- CI: `cargo publish` and `npm publish` now run through Trusted
+  Publishing (OIDC) instead of long-lived registry tokens.
+
 ## [0.6.1] — 2026-06-05
 
 - Docs: rewrite all README examples to spec 0.6 syntax (bare numbers instead of removed `:i`/`:f` markers; `##` comments instead of `#`).
