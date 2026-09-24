@@ -25,6 +25,11 @@ the specification (0.7.x was never tagged for this package).
 - A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
 - Inline raw scalars after `::` get their own dedicated grammar rule
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
+- Embedded NUL bytes in multi-line string content are treated as content,
+  not EOF; the external scanner now consumes the whole content line.
+- Bare scalar values, keywords and inline compounds at true EOF no longer
+  need a trailing newline or produce a missing-newline error. Integer/float
+  node typing at EOF remains a separate limitation.
 
 ### Changed
 
@@ -55,6 +60,12 @@ the specification (0.7.x was never tagged for this package).
 - Сырой `#` допускается как обычный символ ключа (§ 3.4, § 4).
 - Inline-raw-скаляры после `::` получают собственное правило
   грамматики (§ 4, § 5.8.5), вместо провала на общий путь скаляра.
+- Встроенный NUL-байт в содержимом многострочной строки считается частью
+  содержимого, а не EOF; внешний сканер теперь читает всю строку.
+- Голые скалярные значения, ключевые слова и встроенные составные значения
+  в конце файла больше не требуют завершающего перевода строки и не создают
+  отсутствующий узел перевода строки. Типизация узлов integer/float на EOF
+  остаётся отдельным ограничением.
 
 ### Изменено
 
@@ -84,6 +95,10 @@ the specification (0.7.x was never tagged for this package).
 - 原始 `#` 现在允许作为普通键字符（§ 3.4、§ 4）。
 - `::` 之后的内联 raw 标量现在有专用的语法规则
   （§ 4、§ 5.8.5），而不再落入通用标量路径。
+- 多行字符串内容中的嵌入 NUL 字节现在视为内容而非 EOF；外部扫描器
+  会继续读取完整内容行。
+- 文件末尾的裸标量值、关键字和内联复合值不再要求末尾换行，也不会
+  产生缺失换行节点。EOF 处 integer/float 节点类型仍有独立限制。
 
 ### 变更
 

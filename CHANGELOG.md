@@ -37,6 +37,11 @@ the specification (0.7.x was never tagged for this package).
 - A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
 - Inline raw scalars after `::` get their own dedicated grammar rule
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
+- Embedded NUL bytes in multi-line string content are treated as content,
+  not EOF; the external scanner now consumes the whole content line.
+- Bare scalar values, keywords and inline compounds at true EOF no longer
+  need a trailing newline or produce a missing-newline error. Integer/float
+  node typing at EOF remains a separate limitation.
 
 ### Changed
 
