@@ -13,9 +13,11 @@ For the format specification's own history, see the
 
 ## Unreleased
 
-Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`); 0.8.0 adds no
-syntax over 0.7.0 — its § 5.2 leading-zero rule is a typing rule, outside a
-concrete syntax tree.
+## 0.8.0 — 2026-09-28
+
+Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`).
+Version 0.8.0 adds no syntax over 0.7.0; its § 5.2 leading-zero typing
+rule is reflected in the editor tree by classifying those forms as scalars.
 The crate/package version moves to **0.8.0**, in step with the core and
 the specification (0.7.x was never tagged for this package).
 
@@ -42,12 +44,15 @@ the specification (0.7.x was never tagged for this package).
 - Bare scalar values, keywords and inline compounds at true EOF no longer
   need a trailing newline or produce a missing-newline error. Integer/float
   node typing at EOF remains a separate limitation.
+- Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
+  nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
+  integers keep their numeric nodes (§ 5.2).
 
 ### Changed
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6).
-- CI: `cargo publish` and `npm publish` now run through Trusted
-  Publishing (OIDC) instead of long-lived registry tokens.
+- CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
+  prefers OIDC and can fall back to a registry token.
 
 ## [0.6.1] — 2026-06-05
 

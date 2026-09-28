@@ -54,6 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Node.js（`tree-sitter` 包）
 
+npm 包提供原生源码，而不是预编译的 `.node` 二进制文件。
+安装需要 C/C++ 编译工具链及供 `node-gyp` 使用的 Python；
+包已包含生成的解析器，因此无需 Tree-sitter CLI。
+
 ```bash
 npm install tree-sitter tree-sitter-ktav
 ```
@@ -162,11 +166,9 @@ CLI 即可构建。
 ## 状态
 
 `0.8.0` — 实现 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md)。
-语法接受所有合法的 Ktav 0.8.0 文档（对 spec 仓库下
-`tests/valid/*.ktav` 全部用例验证通过）。它是一个语法接受器，而非
-严格的规范校验器——少数语法接受但规范拒绝的边界情况（主要是
-§ 6.10 “标记后必须有空格”）见 [`CHANGELOG.zh.md`](CHANGELOG.zh.md)
-的“已知限制”一节。
+语法使用 spec 0.8 的有效样例验证，但五个已列出的根类型判定样例
+仍会产生错误节点；例外清单位于 `tests/conformance.rs`。Tree-sitter
+为编辑器构建语法树，不代替参考 Rust 解析器的语义校验。
 
 ## 许可证
 

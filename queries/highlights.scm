@@ -67,6 +67,8 @@
 (array_item
   value: (scalar) @string)
 
+(top_scalar) @string
+
 ; ---- Inline compounds (new in spec 0.5.0) ----
 (inline_object) @punctuation.bracket
 (inline_array)  @punctuation.bracket

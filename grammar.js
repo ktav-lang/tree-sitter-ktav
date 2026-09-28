@@ -1,7 +1,7 @@
 /**
  * Tree-sitter grammar for Ktav (כְּתָב) — the Written Configuration Format.
  *
- * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.7/spec.md
+ * Spec: https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md
  *
  * Ktav is line-oriented. Every line is one of:
  *   - blank
@@ -622,14 +622,14 @@ module.exports = grammar({
     // (decimal point form) is a strict superset of the integer pattern
     // prefix. Float is given prec(3) so it beats integer on `1.5\n`.
     //
-    // Integer forms (§ 3.6): hex, octal, binary, decimal with underscores.
+    // In 0.8, redundant-leading-zero decimals are strings (§ 5.2).
     integer: $ => token(prec(2,
-      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
+      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|0|[1-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
     )),
 
-    // Float forms (§ 3.6): decimal-point form or exponent-only form.
+    // Only the float's integer part is subject to the 0.8 zero rule.
     float: $ => token(prec(3,
-      /([+-]?[0-9]([_]?[0-9])*\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?[0-9]([_]?[0-9])*[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
+      /([+-]?(0|[1-9]([_]?[0-9])*)\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?(0|[1-9]([_]?[0-9])*)[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
     )),
 
     // ---- Keywords ----

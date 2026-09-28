@@ -89,3 +89,43 @@ large: 1.5E+3
     key: (key)
     separator: (sep_string)
     value: (float)))
+
+==================
+Spec 0.8 redundant-leading-zero integers are strings
+==================
+zip: 01234
+neg: -045
+double: 00
+underscored_zero: 0_7
+plain_zero: 0
+count: 1234
+hex: 0x1A
+plus: +7
+
+---
+
+(source_file
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (integer))
+  (object_pair key: (key) separator: (sep_string) value: (integer))
+  (object_pair key: (key) separator: (sep_string) value: (integer))
+  (object_pair key: (key) separator: (sep_string) value: (integer)))
+
+==================
+Spec 0.8 redundant-leading-zero floats are strings
+==================
+ver: 01.5
+exp: 05e3
+sub_one: 0.5
+ordinary: 1.5
+
+---
+
+(source_file
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (scalar))
+  (object_pair key: (key) separator: (sep_string) value: (float))
+  (object_pair key: (key) separator: (sep_string) value: (float)))

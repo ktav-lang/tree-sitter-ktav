@@ -25,7 +25,9 @@ fn make_parser() -> tree_sitter::Parser {
 }
 
 fn parse(src: &[u8]) -> tree_sitter::Tree {
-    make_parser().parse(src, None).expect("parser returned None")
+    make_parser()
+        .parse(src, None)
+        .expect("parser returned None")
 }
 
 /// A scanner that mistakes NUL for EOF stops early, so comparing the

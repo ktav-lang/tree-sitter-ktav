@@ -58,6 +58,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Node.js (`tree-sitter` package)
 
+The npm package ships native source, not prebuilt `.node` binaries.
+Installation needs a C/C++ build toolchain and Python for `node-gyp`;
+the generated parser is included, so the Tree-sitter CLI is not needed.
+
 ```bash
 npm install tree-sitter tree-sitter-ktav
 ```
@@ -166,12 +170,10 @@ so consumers do not need the CLI to build.
 ## Status
 
 `0.8.0` — implements [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
-The grammar accepts every valid Ktav 0.8.0 document (verified against
-all `tests/valid/*.ktav` fixtures from the spec repo). It is a
-syntactic accepter, not a strict spec validator — see
-[`CHANGELOG.md`](CHANGELOG.md) "Known limitations" for the small
-number of pathological cases the grammar accepts that the spec
-rejects (mostly missing-whitespace-after-marker — § 6.10).
+The grammar is checked against the spec 0.8 valid fixtures, with five
+named root-kind cases still producing error nodes. See the allow-list in
+`tests/conformance.rs`. Tree-sitter supplies editor syntax trees; it
+does not perform the semantic validation of the reference Rust parser.
 
 ## License
 
