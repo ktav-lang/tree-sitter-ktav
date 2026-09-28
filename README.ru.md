@@ -136,7 +136,7 @@ source = { git = "https://github.com/ktav-lang/tree-sitter-ktav", rev = "main" }
 (`src/node-types.json`) и запросы (`queries/*.scm`), так что любой
 редактор с поддержкой tree-sitter сможет с ней работать.
 
-## Узлы AST
+## Типы узлов CST
 
 Примеры именованных узлов CST (см. `src/node-types.json`):
 

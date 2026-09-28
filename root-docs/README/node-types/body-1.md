@@ -34,7 +34,7 @@ Representative named nodes from the CST (`src/node-types.json`) include:
 required `value` and optional `marker`.
 
 >>>>> lang=ru
-## Узлы AST
+## Типы узлов CST
 
 Примеры именованных узлов CST (см. `src/node-types.json`):
 

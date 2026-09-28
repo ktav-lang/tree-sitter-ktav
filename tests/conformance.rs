@@ -243,6 +243,14 @@ fn validate_oracle(category: &str, path: &Path, bytes: &[u8]) {
     let object = oracle
         .as_object()
         .unwrap_or_else(|| panic!("{} oracle must be a JSON object", path.display()));
+    let require_exact_fields = |fields: &[&str]| {
+        assert_eq!(
+            object.keys().map(String::as_str).collect::<HashSet<_>>(),
+            fields.iter().copied().collect(),
+            "{} oracle fields changed",
+            path.display()
+        );
+    };
     let require_string = |field: &str| {
         let value = object.get(field).and_then(serde_json::Value::as_str);
         assert!(
@@ -268,18 +276,41 @@ fn validate_oracle(category: &str, path: &Path, bytes: &[u8]) {
     match category {
         "invalid" => require_string("expected_error"),
         "unrepresentable" => {
+            require_exact_fields(&["value", "unrepresentable_reason", "note"]);
             require_field("value");
             require_string("unrepresentable_reason");
+            require_string("note");
+            assert!(
+                ["ScalarRoot", "EmptyKeyName", "NonFiniteFloat"]
+                    .contains(&object["unrepresentable_reason"].as_str().unwrap()),
+                "{} has a reason unavailable to unrepresentable fixtures",
+                path.display()
+            );
         }
         "parseable-unrepresentable" => {
+            require_exact_fields(&["value", "unrepresentable_reason", "note"]);
             require_document_root("value");
             require_string("unrepresentable_reason");
+            require_string("note");
+            assert!(
+                [
+                    "CRByte",
+                    "BothFormsRequired",
+                    "TrailingWhitespaceCollision",
+                    "LeadingWhitespaceCollision"
+                ]
+                .contains(&object["unrepresentable_reason"].as_str().unwrap()),
+                "{} has a reason unavailable to parseable-unrepresentable fixtures",
+                path.display()
+            );
         }
         "strict-lossy" => {
+            require_exact_fields(&["lax_value", "expected_error", "body", "canonical", "note"]);
             require_document_root("lax_value");
             require_string("expected_error");
             require_string("body");
             require_string("canonical");
+            require_string("note");
             assert_eq!(
                 object
                     .get("expected_error")

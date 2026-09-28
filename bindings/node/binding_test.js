@@ -32,6 +32,10 @@ test("0.8 leading-zero values use string nodes", () => {
 test("inline numeric nodes do not depend on token length", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);
+  const highlights = new Parser.Query(
+    grammar,
+    fs.readFileSync(path.resolve(__dirname, "../../queries/highlights.scm"), "utf8"),
+  );
   for (const value of [
     `0.${"0".repeat(254)}`,
     `0.${"0".repeat(255)}`,
@@ -45,6 +49,8 @@ test("inline numeric nodes do not depend on token length", () => {
       .childForFieldName("value").namedChildren[0].namedChildren[0];
     assert.equal(whole.type, "float");
     assert.equal(inline.type, "float", `inline ${value.length}-byte value`);
+    assert.ok(highlights.captures(tree.rootNode).some(({ name, node }) =>
+      name === "number.float" && node.startIndex === inline.startIndex && node.text === value));
   }
 
   const notNumber = `0.${"0".repeat(300)}x`;
@@ -109,7 +115,7 @@ test("keyword nodes span only the keyword", () => {
 test("editor queries cover raw values and inline object scopes", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);
-  const tree = parser.parse("raw:: value\nmeta: {pattern:: literal, nested: {id: 0123}}\nlist: [one, [two]]\nzero: 0123\ncount: 1234\n");
+  const tree = parser.parse("raw:: value\nmeta: {pattern:: literal, nested: {id: 0123, \"a,b\": [1, true, x\\,y]}}\nlist: [one, [two]]\nzero: 0123\ncount: 1234\n");
   assert.equal(tree.rootNode.hasError, false);
 
   const queriesDir = path.resolve(__dirname, "../../queries");
@@ -126,12 +132,16 @@ test("editor queries cover raw values and inline object scopes", () => {
     name === "string.special" && node.type === "inline_raw_scalar" && node.text === "literal"));
   assert.ok(highlightCaptures.some(({ name, node }) => name === "string" && node.type === "scalar" && node.text === "0123\n"));
   assert.ok(highlightCaptures.some(({ name, node }) => name === "number" && node.type === "integer" && node.text === "1234\n"));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "number" && node.type === "integer" && node.text === "1"));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "constant.builtin.boolean" && node.type === "kw_true" && node.text === "true"));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "string.special.key" && node.type === "quoted_key_segment" && node.text === "\"a,b\""));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "string.escape" && node.type === "escape_sequence" && node.text === "\\,"));
 
   const inlineBracketCaptures = highlightCaptures.filter(({ name, node }) =>
     name === "punctuation.bracket" && ["{", "}", "[", "]"].includes(node.type));
   assert.deepEqual(
     inlineBracketCaptures.map(({ node }) => node.text).sort(),
-    ["[", "[", "]", "]", "{", "{", "}", "}"],
+    ["[", "[", "[", "]", "]", "]", "{", "{", "}", "}"],
   );
   assert.ok(!highlightCaptures.some(({ name, node }) =>
     name === "punctuation.bracket" && ["inline_object", "inline_array"].includes(node.type)));
@@ -151,6 +161,7 @@ test("editor queries cover raw values and inline object scopes", () => {
   assert.ok(inlineDefinitions.includes("pattern"));
   assert.ok(inlineDefinitions.includes("nested"));
   assert.ok(inlineDefinitions.includes("id"));
+  assert.ok(inlineDefinitions.includes("\"a,b\""));
 });
 
 test("numeric edge whitespace follows the 0.8 spec whitespace set", () => {
