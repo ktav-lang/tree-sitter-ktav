@@ -10,10 +10,14 @@ Representative named nodes from the CST (`src/node-types.json`) include:
 | `blank_line`               | an empty line                                   |
 | `object_pair`              | `key SEP value` line                            |
 | `key` / `dotted_key`       | the key portion and dotted segments             |
+| `quoted_key_segment`       | a `"…"`, `'…'` or `` `…` `` key segment (§ 5.3.3) |
+| `escape_sequence`          | an escape in a key or inline value (§ 3.7)      |
 | `sep_string` / `sep_raw`   | the `:` and `::` pair separators                |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | keywords, whole-line and inline |
 | `integer` / `float`        | numbers, whole-line and inline (§ 5.2 typing)  |
 | `scalar` / `raw_scalar`    | ordinary and raw single-line values             |
+| `top_scalar`               | a string item of a root-level Array             |
+| `inline_scalar` / `inline_raw_scalar` | string values after `:` / `::` in inline compounds |
 | `compound_object`          | `{` … `}` block                                 |
 | `compound_array`           | `[` … `]` block                                 |
 | `inline_object` / `inline_array` | inline compounds with comma-separated entries |
@@ -41,10 +45,14 @@ required `value` and optional `marker`.
 | `blank_line`               | пустую строку                                    |
 | `object_pair`              | строку `ключ SEP значение`                       |
 | `key` / `dotted_key`       | ключ и сегменты точечного пути                   |
+| `quoted_key_segment`       | сегмент ключа `"…"`, `'…'` или `` `…` `` (§ 5.3.3) |
+| `escape_sequence`          | экранирование в ключе или inline-значении (§ 3.7) |
 | `sep_string` / `sep_raw`   | разделители пар `:` и `::`                       |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова, в строке и inline |
 | `integer` / `float`        | числа, в строке и inline (типизация § 5.2)       |
 | `scalar` / `raw_scalar`    | обычные и raw-значения в одну строку              |
+| `top_scalar`               | строковый элемент массива верхнего уровня        |
+| `inline_scalar` / `inline_raw_scalar` | строковые значения после `:` / `::` в inline-структурах |
 | `compound_object`          | блок `{` … `}`                                   |
 | `compound_array`           | блок `[` … `]`                                   |
 | `inline_object` / `inline_array` | inline-структуры с элементами через запятую |
@@ -72,10 +80,14 @@ required `value` and optional `marker`.
 | `blank_line`              | 空行                                          |
 | `object_pair`             | `key SEP value` 行                            |
 | `key` / `dotted_key`      | 键及其点分段                                   |
+| `quoted_key_segment`      | `"…"`、`'…'` 或 `` `…` `` 形式的键段（§ 5.3.3） |
+| `escape_sequence`         | 键或内联值中的转义（§ 3.7）                    |
 | `sep_string` / `sep_raw`  | 键值对分隔符 `:` 和 `::`                      |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字（整行值与内联值） |
 | `integer` / `float`       | 数值（整行值与内联值，按 § 5.2 推断）          |
 | `scalar` / `raw_scalar`   | 普通及 raw 单行值                              |
+| `top_scalar`              | 顶层数组中的字符串条目                         |
+| `inline_scalar` / `inline_raw_scalar` | 内联结构中 `:` / `::` 之后的字符串值 |
 | `compound_object`         | `{` … `}` 块                                  |
 | `compound_array`          | `[` … `]` 块                                  |
 | `inline_object` / `inline_array` | 内联结构及其逗号分隔的条目               |

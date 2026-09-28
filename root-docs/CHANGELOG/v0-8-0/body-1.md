@@ -11,16 +11,17 @@ the core and the specification (0.7.x was never tagged for this package).
 
 - Quoted key segments (§ 5.3.3): a key segment may be written `"…"`,
   `'…'` or `` `…` `` instead of bare, per dotted-path segment, and is
-  distinguished from a bare key in `queries/highlights.scm`.
+  distinguished from a bare key in `queries/highlights.scm`. An empty
+  quoted segment (`""`, `''`, ` `` `) is a parse error (`EmptyKey`,
+  § 6.5); `" "` is a valid one-space key.
 - The escape table is complete, at 14 forms (§ 3.7), including `\uXXXX`
-  with surrogate pairs (§ 3.7.1).
+  with surrogate pairs (§ 3.7.1); a lone surrogate, or a high surrogate
+  not followed by a low one, is a parse error (`BadEscapeSequence`).
 - Inline values inside `{...}` and `[...]` are typed like whole-line
   values: `integer`, `float` and `keyword` nodes instead of
-  `inline_scalar` (§ 5.2, § 5.8). An escape forces String (§ 3.7), and
-  `::` values stay raw (§ 5.8.5).
+  `inline_scalar`, whatever the literal's length (§ 5.2, § 5.8). An
+  escape forces String (§ 3.7), and `::` values stay raw (§ 5.8.5).
 - Exactly one leading byte-order mark is skipped (§ 3.1).
-
-### Fixed
 
 >>>>> lang=ru
 ## [0.8.0] — 2026-09-28
@@ -37,16 +38,18 @@ the core and the specification (0.7.x was never tagged for this package).
 - Сегменты ключа в кавычках (§ 5.3.3): сегмент ключа можно записать как
   `"…"`, `'…'` или `` `…` `` вместо голого, для каждого сегмента
   точечного пути; в `queries/highlights.scm` такой сегмент отличается
-  от голого ключа.
+  от голого ключа. Пустой сегмент в кавычках (`""`, `''`, ` `` `) —
+  ошибка разбора (`EmptyKey`, § 6.5); `" "` — корректный ключ из одного
+  пробела.
 - Таблица экранирования полна: 14 форм (§ 3.7), включая `\uXXXX` с
-  суррогатными парами (§ 3.7.1).
+  суррогатными парами (§ 3.7.1); одиночный суррогат или старший суррогат
+  без следующего младшего — ошибка разбора (`BadEscapeSequence`).
 - Inline-значения внутри `{...}` и `[...]` типизируются как значения
   целой строки: узлы `integer`, `float` и `keyword` вместо
-  `inline_scalar` (§ 5.2, § 5.8). Экранирование делает значение строкой
-  (§ 3.7), а значения после `::` остаются raw (§ 5.8.5).
+  `inline_scalar` независимо от длины литерала (§ 5.2, § 5.8).
+  Экранирование делает значение строкой (§ 3.7), а значения после `::`
+  остаются raw (§ 5.8.5).
 - Ровно один ведущий байтовый маркер порядка байт (BOM) пропускается (§ 3.1).
-
-### Исправлено
 
 >>>>> lang=zh
 ## [0.8.0] — 2026-09-28
@@ -60,14 +63,14 @@ the core and the specification (0.7.x was never tagged for this package).
 
 - 带引号的键段（§ 5.3.3）：键段可写作 `"…"`、`'…'` 或 `` `…` ``
   而非裸段，按点分路径逐段适用；此类键段在 `queries/highlights.scm`
-  中与裸键区分。
+  中与裸键区分。空的带引号键段（`""`、`''`、` `` `）属于解析错误
+  （`EmptyKey`，§ 6.5）；`" "` 是合法的单空格键。
 - 转义表已完整，共 14 种形式（§ 3.7），包括支持代理对的 `\uXXXX`
-  （§ 3.7.1）。
+  （§ 3.7.1）；单独的代理项，或其后未跟低代理项的高代理项，属于
+  解析错误（`BadEscapeSequence`）。
 - `{...}` 和 `[...]` 中的内联值与整行值一样进行类型区分：生成
-  `integer`、`float` 和 `keyword` 节点，而非 `inline_scalar`
-  （§ 5.2、§ 5.8）。含转义的值一律为字符串（§ 3.7），`::` 之后的值
-  保持 raw（§ 5.8.5）。
+  `integer`、`float` 和 `keyword` 节点，而非 `inline_scalar`，与
+  字面量长度无关（§ 5.2、§ 5.8）。含转义的值一律为字符串（§ 3.7），
+  `::` 之后的值保持 raw（§ 5.8.5）。
 - 跳过恰好一个前导的字节顺序标记（BOM）（§ 3.1）。
-
-### 修复
 

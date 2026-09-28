@@ -129,6 +129,9 @@ module.exports = grammar({
     $._inline_null,      // whole inline value `null`
     $._inline_true,      // whole inline value `true`
     $._inline_false,     // whole inline value `false`
+    $._line_null,        // whole-line `null` where a root/array line token would win
+    $._line_true,        // whole-line `true`, same contexts
+    $._line_false,       // whole-line `false`, same contexts
   ],
 
   conflicts: $ => [],
@@ -464,14 +467,14 @@ module.exports = grammar({
     // After `::` the body is the dedicated <inline-raw-scalar> — literal
     // data to the first unescaped `,` / `}` / `]`, escapes processed, an
     // initial `{`/`[` literal — "This production does NOT dispatch through
-    // <inline-value> or <inline-scalar>" (spec.md:588-596); "the `::`
-    // marker therefore cannot open or recurse into a compound"
-    // (§ 5.8.5, spec.md:1573-1577). After `:` the value goes through the
+    // <inline-value> or <inline-scalar>" (§ 4 <inline-raw-scalar>); "The
+    // raw `::` branch of an inline pair is not an inline value" (§ 5.8.5).
+    // After `:` the value goes through the
     // full <inline-value> dispatch (§ 5.8.5: "The dispatch rules below
     // apply only after a plain `:` separator"). Empty value after either
     // separator is the explicit empty String (§ 5.8.2). Inline pairs, unlike
-    // multi-line pairs, require no whitespace after the separator (§ 4,
-    // spec.md:620-624).
+    // multi-line pairs, require no whitespace after the separator (§ 4
+    // <inline-pair>: the `(ws)` after the separator is optional).
     inline_pair: $ => choice(
       seq(
         field('key', $.key),
@@ -684,7 +687,7 @@ module.exports = grammar({
     // empty-paren rules likewise.
     // `(` / `((` followed by text is a scalar, not a multiline opener:
     // the openers require `(` (ws) &line-end (§ 4 <value-start>), and
-    // § 5.8.5 (spec.md:1579-1588) makes leading parens ordinary content.
+    // § 5.8.5 makes leading parens ordinary content.
     // The `)` exclusion keeps `()`/`(())` unambiguous with the
     // empty-paren tokens (higher lexical precedence, same length).
     // `_eol` consumes trailing whitespace, so an exact keyword does not
@@ -724,13 +727,17 @@ module.exports = grammar({
     ),
 
     // ---- Keywords ----
-    // A whole-line token beats top-level scalar text; the shorter literal
-    // handles true EOF without winning over a longer scalar like `truex`.
-    keyword: $ => choice(
-      seq(choice($.kw_null, $.kw_true, $.kw_false), $._eol),
-      alias(token(prec(3, /null[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_null),
-      alias(token(prec(3, /true[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_true),
-      alias(token(prec(3, /false[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_false),
+    // Root and Array-follow line tokens swallow the line end, so there the
+    // external scanner emits the keyword; elsewhere the literal ties with
+    // `_scalar_text` and wins as a string token, while `truex` stays a scalar.
+    keyword: $ => seq(
+      choice(
+        $.kw_null, $.kw_true, $.kw_false,
+        alias($._line_null, $.kw_null),
+        alias($._line_true, $.kw_true),
+        alias($._line_false, $.kw_false),
+      ),
+      $._eol,
     ),
     kw_null:  $ => token('null'),
     kw_true:  $ => token('true'),

@@ -9,7 +9,8 @@
 发现 bug 时,**在修复之前** 先写一个复现它的测试 —— 测试在
 `main` 分支上 **必须失败**,修复之后才通过。两者放在同一个 PR。
 
-测试位于 `test/corpus/`,以 tree-sitter 测试 fixture 的形式存放。
+测试位于 `test/corpus/`（tree-sitter 语料库）、`tests/*.rs`（Rust 测试，
+包括规范一致性测试）和 `bindings/node/binding_test.js`（Node 绑定）。
 
 ### 2. 语法跟随规范
 
@@ -39,6 +40,7 @@ npm ci                       # 安装 lock 文件固定的 tree-sitter-cli 0.26.
 npx tree-sitter generate     # 重新生成 src/parser.c 等文件
 npx tree-sitter test         # 运行 tree-sitter 语料库
 cargo test                   # 运行 Rust 测试，包括规范一致性测试
+npm test                     # 运行 Node 绑定测试（会重新构建 addon）
 ```
 
 运行 `cargo test` 前，请执行 `git submodule update --init --recursive`
@@ -49,6 +51,11 @@ cargo test                   # 运行 Rust 测试，包括规范一致性测试
 本仓库参与组织级三语政策(EN / RU / ZH)。每份 prose 文档都有三种
 并行版本 —— 命名约定和"三份一并更新"规则见
 [`ktav-lang/.github/AGENTS.md`](https://github.com/ktav-lang/.github/blob/main/AGENTS.md)。
+
+Markdown 文件由 [polydoc](https://github.com/ktav-lang/polydoc) 从
+`root-docs/` 生成：请修改其中的单元，三种语言在同一次修改中更新，
+不要直接修改生成的 `.md`；然后运行 `npm run docs:build` 和
+`npm run docs:check`。
 
 ### 贡献的许可
 

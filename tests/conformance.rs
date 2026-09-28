@@ -4,25 +4,23 @@
 //!
 //! For tree-sitter we cannot validate full structural conformance the
 //! way the reference Rust parser can — tree-sitter's job is to build a
-//! syntax tree, not enforce document-level rules like `DuplicateName`
-//! or `PathConflict`. So we apply a coarser conformance contract:
+//! syntax tree, not enforce document-level rules like `DuplicateKey`
+//! or `KeyPathConflict`. So we apply a coarser conformance contract:
 //!
 //! * `valid/**.ktav` — the grammar MUST produce a tree with no
 //!   `is_error()` nodes and no `is_missing()` nodes. The root kind is
 //!   checked against the JSON oracle; deeper Values belong to the
 //!   reference parser's suite.
 //!
-//! * `invalid/**.ktav` — many grammar-level errors (unbalanced
-//!   brackets, empty key, etc.) DO surface as `ERROR` / `MISSING`
-//!   nodes, but key conflicts (`DuplicateKey`, `KeyPathConflict`) parse
-//!   cleanly and need semantic validation; `InvalidUtf8` needs raw-byte
-//!   validation before syntax parsing.
-//!   We therefore do NOT assert that the tree-sitter grammar rejects
-//!   every invalid fixture — we only sanity-check that the grammar
-//!   doesn't panic and produces *some* tree. A future enhancement is
-//!   to maintain a list of categories that ARE syntactically catchable
-//!   (e.g. `UnbalancedBracket`, `EmptyKey`, `MismatchedBracket`,
-//!   `MissingSeparatorSpace`) and assert error nodes for those.
+//! * `invalid/**.ktav` — every fixture MUST surface an `ERROR` /
+//!   `MISSING` node unless its expected error is outside syntax: key
+//!   conflicts (`DuplicateKey`, `KeyPathConflict`) need semantic
+//!   validation, `InvalidUtf8` needs raw-byte validation before parsing.
+//!   Those still have to parse without panicking.
+//!
+//! * `parseable-unrepresentable/` and `strict-lossy/` — valid syntax,
+//!   so they MUST parse cleanly. `unrepresentable/` holds writer-side
+//!   JSON inputs only; its oracles are schema-checked.
 //!
 //! The pinned corpus manifest is checked before any fixture runs.
 //! A missing or incomplete submodule fails rather than skipping tests.

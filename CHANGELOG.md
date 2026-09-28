@@ -25,13 +25,16 @@ the core and the specification (0.7.x was never tagged for this package).
 
 - Quoted key segments (§ 5.3.3): a key segment may be written `"…"`,
   `'…'` or `` `…` `` instead of bare, per dotted-path segment, and is
-  distinguished from a bare key in `queries/highlights.scm`.
+  distinguished from a bare key in `queries/highlights.scm`. An empty
+  quoted segment (`""`, `''`, ` `` `) is a parse error (`EmptyKey`,
+  § 6.5); `" "` is a valid one-space key.
 - The escape table is complete, at 14 forms (§ 3.7), including `\uXXXX`
-  with surrogate pairs (§ 3.7.1).
+  with surrogate pairs (§ 3.7.1); a lone surrogate, or a high surrogate
+  not followed by a low one, is a parse error (`BadEscapeSequence`).
 - Inline values inside `{...}` and `[...]` are typed like whole-line
   values: `integer`, `float` and `keyword` nodes instead of
-  `inline_scalar` (§ 5.2, § 5.8). An escape forces String (§ 3.7), and
-  `::` values stay raw (§ 5.8.5).
+  `inline_scalar`, whatever the literal's length (§ 5.2, § 5.8). An
+  escape forces String (§ 3.7), and `::` values stay raw (§ 5.8.5).
 - Exactly one leading byte-order mark is skipped (§ 3.1).
 
 ### Fixed
@@ -39,10 +42,6 @@ the core and the specification (0.7.x was never tagged for this package).
 - The full 25-code-point whitespace set (§ 3.3) is recognised
   everywhere: indentation, token-edge trimming, compound openers and
   closers, comments and blank lines — not only ASCII whitespace.
-- A lone surrogate in `\uXXXX`, or a high surrogate not followed by a low
-  one, is a parse error (`BadEscapeSequence`, § 3.7.1).
-- An empty quoted key segment (`""`, `''`, ` `` `) is a parse error
-  (`EmptyKey`, § 6.5); `" "` is still a valid one-space key.
 - DEL (`0x7F`) is no longer accepted as a bare key character (§ 4).
 - The spaced-key positional rule applies per segment, not per word
   (§ 5.3.3).
@@ -62,8 +61,6 @@ the core and the specification (0.7.x was never tagged for this package).
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
-- Inline numeric tokens no longer switch to string nodes after 256 bytes;
-  long literals keep the same node type as whole-line values.
 - Keyword prefixes such as `truex` remain strings; exact keywords retain
   their node type with trailing whitespace and at EOF.
 - Highlight queries capture raw top-level and inline scalar values;

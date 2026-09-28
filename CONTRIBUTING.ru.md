@@ -10,7 +10,9 @@
 воспроизводит — он **должен падать на `main`** и проходить после
 фикса. Оба — в одном PR.
 
-Тесты лежат в `test/corpus/` как tree-sitter-фикстуры.
+Тесты лежат в `test/corpus/` (корпус tree-sitter), `tests/*.rs` (Rust,
+включая проверку соответствия спецификации) и
+`bindings/node/binding_test.js` (Node-биндинг).
 
 ### 2. Грамматика следует за спецификацией
 
@@ -41,6 +43,7 @@ npm ci                       # устанавливает tree-sitter-cli 0.26.8
 npx tree-sitter generate     # обновляет src/parser.c и связанные файлы
 npx tree-sitter test         # запускает корпус tree-sitter
 cargo test                   # тесты Rust, включая проверку соответствия спекам
+npm test                     # тесты Node-биндинга (пересобирает аддон)
 ```
 
 Перед `cargo test` инициализируйте субмодуль `spec` командой
@@ -53,6 +56,11 @@ cargo test                   # тесты Rust, включая проверку 
 Каждый prose-файл живёт в трёх параллельных версиях — см.
 [`ktav-lang/.github/AGENTS.md`](https://github.com/ktav-lang/.github/blob/main/AGENTS.md)
 про naming convention и правило "обновлять все три в одном коммите".
+
+Markdown-файлы генерирует
+[polydoc](https://github.com/ktav-lang/polydoc) из `root-docs/`: правьте
+юниты там, все три языка в одной правке, а не сгенерированные `.md`;
+затем запустите `npm run docs:build` и `npm run docs:check`.
 
 ### Лицензия вкладов
 

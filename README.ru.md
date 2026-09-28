@@ -147,10 +147,14 @@ source = { git = "https://github.com/ktav-lang/tree-sitter-ktav", rev = "main" }
 | `blank_line`               | пустую строку                                    |
 | `object_pair`              | строку `ключ SEP значение`                       |
 | `key` / `dotted_key`       | ключ и сегменты точечного пути                   |
+| `quoted_key_segment`       | сегмент ключа `"…"`, `'…'` или `` `…` `` (§ 5.3.3) |
+| `escape_sequence`          | экранирование в ключе или inline-значении (§ 3.7) |
 | `sep_string` / `sep_raw`   | разделители пар `:` и `::`                       |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова, в строке и inline |
 | `integer` / `float`        | числа, в строке и inline (типизация § 5.2)       |
 | `scalar` / `raw_scalar`    | обычные и raw-значения в одну строку              |
+| `top_scalar`               | строковый элемент массива верхнего уровня        |
+| `inline_scalar` / `inline_raw_scalar` | строковые значения после `:` / `::` в inline-структурах |
 | `compound_object`          | блок `{` … `}`                                   |
 | `compound_array`           | блок `[` … `]`                                   |
 | `inline_object` / `inline_array` | inline-структуры с элементами через запятую |

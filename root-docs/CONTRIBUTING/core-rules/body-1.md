@@ -7,7 +7,9 @@ When you find a bug, **before fixing it**, write a test that reproduces
 it — the test **must fail on `main`** and pass after the fix. Include
 both in the same PR.
 
-Tests live in `test/corpus/` as tree-sitter test fixtures.
+Tests live in `test/corpus/` (tree-sitter corpus), `tests/*.rs` (Rust,
+including spec conformance) and `bindings/node/binding_test.js` (Node
+binding).
 
 ### 2. Keep the grammar in sync with the spec
 
@@ -31,7 +33,9 @@ messages with `feat:` / `fix:` — no conventional commits here.
 воспроизводит — он **должен падать на `main`** и проходить после
 фикса. Оба — в одном PR.
 
-Тесты лежат в `test/corpus/` как tree-sitter-фикстуры.
+Тесты лежат в `test/corpus/` (корпус tree-sitter), `tests/*.rs` (Rust,
+включая проверку соответствия спецификации) и
+`bindings/node/binding_test.js` (Node-биндинг).
 
 ### 2. Грамматика следует за спецификацией
 
@@ -54,7 +58,8 @@ messages with `feat:` / `fix:` — no conventional commits here.
 发现 bug 时,**在修复之前** 先写一个复现它的测试 —— 测试在
 `main` 分支上 **必须失败**,修复之后才通过。两者放在同一个 PR。
 
-测试位于 `test/corpus/`,以 tree-sitter 测试 fixture 的形式存放。
+测试位于 `test/corpus/`（tree-sitter 语料库）、`tests/*.rs`（Rust 测试，
+包括规范一致性测试）和 `bindings/node/binding_test.js`（Node 绑定）。
 
 ### 2. 语法跟随规范
 

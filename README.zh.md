@@ -142,10 +142,14 @@ tree-sitter 的编辑器都可以在解析器构建后直接使用。
 | `blank_line`              | 空行                                          |
 | `object_pair`             | `key SEP value` 行                            |
 | `key` / `dotted_key`      | 键及其点分段                                   |
+| `quoted_key_segment`      | `"…"`、`'…'` 或 `` `…` `` 形式的键段（§ 5.3.3） |
+| `escape_sequence`         | 键或内联值中的转义（§ 3.7）                    |
 | `sep_string` / `sep_raw`  | 键值对分隔符 `:` 和 `::`                      |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字（整行值与内联值） |
 | `integer` / `float`       | 数值（整行值与内联值，按 § 5.2 推断）          |
 | `scalar` / `raw_scalar`   | 普通及 raw 单行值                              |
+| `top_scalar`              | 顶层数组中的字符串条目                         |
+| `inline_scalar` / `inline_raw_scalar` | 内联结构中 `:` / `::` 之后的字符串值 |
 | `compound_object`         | `{` … `}` 块                                  |
 | `compound_array`          | `[` … `]` 块                                  |
 | `inline_object` / `inline_array` | 内联结构及其逗号分隔的条目               |

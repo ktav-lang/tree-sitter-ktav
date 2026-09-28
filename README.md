@@ -147,10 +147,14 @@ Representative named nodes from the CST (`src/node-types.json`) include:
 | `blank_line`               | an empty line                                   |
 | `object_pair`              | `key SEP value` line                            |
 | `key` / `dotted_key`       | the key portion and dotted segments             |
+| `quoted_key_segment`       | a `"…"`, `'…'` or `` `…` `` key segment (§ 5.3.3) |
+| `escape_sequence`          | an escape in a key or inline value (§ 3.7)      |
 | `sep_string` / `sep_raw`   | the `:` and `::` pair separators                |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | keywords, whole-line and inline |
 | `integer` / `float`        | numbers, whole-line and inline (§ 5.2 typing)  |
 | `scalar` / `raw_scalar`    | ordinary and raw single-line values             |
+| `top_scalar`               | a string item of a root-level Array             |
+| `inline_scalar` / `inline_raw_scalar` | string values after `:` / `::` in inline compounds |
 | `compound_object`          | `{` … `}` block                                 |
 | `compound_array`           | `[` … `]` block                                 |
 | `inline_object` / `inline_array` | inline compounds with comma-separated entries |

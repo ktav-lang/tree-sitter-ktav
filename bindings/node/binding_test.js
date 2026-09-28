@@ -85,6 +85,27 @@ test("whole-line keywords require the complete trimmed value", () => {
   }
 });
 
+test("keyword nodes span only the keyword", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const value of ["true", "false", "null"]) {
+    for (const suffix of ["\n", "   \n", " \r\n", "\r", ""]) {
+      for (const source of [
+        `${value}${suffix}`,
+        `x\n${value}${suffix}`,
+        `a: ${value}${suffix}`,
+        `a: [\n  ${value}${suffix}${suffix ? "" : "\n"}]\n`,
+      ]) {
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, false, `${JSON.stringify(source)}: ${tree.rootNode}`);
+        const keywords = tree.rootNode.descendantsOfType(`kw_${value}`);
+        assert.equal(keywords.length, 1, JSON.stringify(source));
+        assert.equal(keywords[0].text, value, JSON.stringify(source));
+      }
+    }
+  }
+});
+
 test("editor queries cover raw values and inline object scopes", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);

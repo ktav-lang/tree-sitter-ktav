@@ -1,6 +1,6 @@
 // Tree-sitter external scanner for Ktav.
 //
-// Emits seventeen tokens that the LR(1) grammar generated from grammar.js
+// Emits twenty tokens that the LR(1) grammar generated from grammar.js
 // cannot express on its own:
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
@@ -62,6 +62,10 @@
 //                      / `]`, is a number or keyword. Any escape forces
 //                      String (§ 3.7), so the scanner declines and the
 //                      grammar's `inline_scalar` takes over.
+//   _line_null / _line_true / _line_false — a whole-line keyword in the
+//                      root and Array-follow contexts, where the line
+//                      tokens include the line end and would outlast the
+//                      literal. The token ends at the keyword itself.
 //
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
@@ -89,6 +93,9 @@ enum TokenType {
     INLINE_NULL,
     INLINE_TRUE,
     INLINE_FALSE,
+    LINE_NULL,
+    LINE_TRUE,
+    LINE_FALSE,
 };
 
 void *tree_sitter_ktav_external_scanner_create(void) {
@@ -293,6 +300,21 @@ static bool is_keyword(const char *prefix, unsigned length) {
            (length == 5 && !memcmp(prefix, "false", 5));
 }
 
+// Called with `length` bytes consumed: marks the end of a keyword prefix.
+static void mark_keyword_end(TSLexer *lexer, const char *prefix, unsigned length) {
+    if (is_keyword(prefix, length)) lexer->mark_end(lexer);
+}
+
+// A trimmed line that is exactly a keyword; `mark_keyword_end` set its end.
+static bool finish_line_keyword(TSLexer *lexer, const bool *valid_symbols,
+                                const char *prefix, unsigned last_content) {
+    if (!is_keyword(prefix, last_content)) return false;
+    enum TokenType symbol = prefix[0] == 'n' ? LINE_NULL : prefix[0] == 't' ? LINE_TRUE : LINE_FALSE;
+    if (!valid_symbols[symbol]) return false;
+    lexer->result_symbol = symbol;
+    return true;
+}
+
 static bool scan_eof_number(TSLexer *lexer, const bool *valid_symbols) {
     while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
     if (lexer->lookahead == '+' || lexer->lookahead == '-') lexer->advance(lexer, false);
@@ -412,6 +434,7 @@ static bool scan_root_fallback_scalar(TSLexer *lexer, const bool *valid_symbols)
     unsigned last_content = 0;
     while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
         int32_t c = lexer->lookahead;
+        mark_keyword_end(lexer, prefix, length);
         if (length < 6) {
             prefix[length] = c < 128 ? (char)c : 0;
             length++;
@@ -456,6 +479,10 @@ static bool scan_root_fallback_scalar(TSLexer *lexer, const bool *valid_symbols)
         if (!is_h_ws(c)) segment_start = false;
         lexer->advance(lexer, false);
     }
+    mark_keyword_end(lexer, prefix, length);
+    if (!saw_colon && !saw_quote && finish_line_keyword(lexer, valid_symbols, prefix, last_content)) {
+        return true;
+    }
     if (saw_colon || saw_quote) {
         if (!consume_line_terminator(lexer)) return false;
         lexer->result_symbol = ROOT_FALLBACK_SCALAR;
@@ -497,7 +524,8 @@ static bool scan_array_follow_eof(TSLexer *lexer, const bool *valid_symbols) {
     unsigned last_content = 0;
     while (!lexer->eof(lexer)) {
         int32_t c = lexer->lookahead;
-        if (c == '\r' || c == '\n') return false;
+        if (c == '\r' || c == '\n') break;
+        mark_keyword_end(lexer, prefix, length);
         if (length < 6) {
             prefix[length] = c < 128 ? (char)c : 0;
             length++;
@@ -505,6 +533,9 @@ static bool scan_array_follow_eof(TSLexer *lexer, const bool *valid_symbols) {
         if (!is_h_ws(c)) last_content = length;
         lexer->advance(lexer, false);
     }
+    mark_keyword_end(lexer, prefix, length);
+    if (finish_line_keyword(lexer, valid_symbols, prefix, last_content)) return true;
+    if (!lexer->eof(lexer)) return false;
     if ((first == 't' || first == 'f' || first == 'n') &&
         is_keyword(prefix, last_content)) return false;
     lexer->mark_end(lexer);
@@ -689,7 +720,9 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
             unsigned last_content = 0;
             while (!lexer->eof(lexer)) {
                 int32_t c = lexer->lookahead;
-                if (c == ':' || c == '\r' || c == '\n') return false;
+                if (c == ':') return false;
+                if (c == '\r' || c == '\n') break;
+                mark_keyword_end(lexer, prefix, length);
                 if (length < 6) {
                     prefix[length] = c < 128 ? (char)c : 0;
                     length++;
@@ -697,7 +730,9 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
                 if (!is_h_ws(c)) last_content = length;
                 lexer->advance(lexer, false);
             }
-            if (is_keyword(prefix, last_content)) return false;
+            mark_keyword_end(lexer, prefix, length);
+            if (finish_line_keyword(lexer, valid_symbols, prefix, last_content)) return true;
+            if (!lexer->eof(lexer) || is_keyword(prefix, last_content)) return false;
             lexer->mark_end(lexer);
             lexer->result_symbol = TOP_SCALAR_EOF;
             return true;
