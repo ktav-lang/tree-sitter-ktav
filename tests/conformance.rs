@@ -8,9 +8,9 @@
 //! or `PathConflict`. So we apply a coarser conformance contract:
 //!
 //! * `valid/**.ktav` — the grammar MUST produce a tree with no
-//!   `is_error()` nodes and no `is_missing()` nodes. Whether the tree
-//!   shape matches the JSON oracle is out of scope here (that lives in
-//!   the reference parser's suite).
+//!   `is_error()` nodes and no `is_missing()` nodes. The root kind is
+//!   checked against the JSON oracle; deeper Values belong to the
+//!   reference parser's suite.
 //!
 //! * `invalid/**.ktav` — many grammar-level errors (unbalanced
 //!   brackets, empty key, etc.) DO surface as `ERROR` / `MISSING`
@@ -26,50 +26,10 @@
 //!
 //! The pinned corpus manifest is checked before any fixture runs.
 //! A missing or incomplete submodule fails rather than skipping tests.
-//!
-//! ## Known grammar divergences (allow-list)
-//!
-//! Five valid-fixture cases currently produce grammar errors; they
-//! are tracked in `KNOWN_VALID_FAILURES` below as NAMED entries in
-//! gap G5 (root-kind dispatch, see `docs/spec-0.7-gap-audit.md` § 5),
-//! each carrying its own justification comment in the list. A new failing
-//! fixture that is NOT in the list is a hard failure by design. Removing
-//! an entry when the grammar gains support is a one-line follow-up.
 
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-/// Valid fixtures that the tree-sitter grammar does NOT currently parse
-/// cleanly, listed by path suffix relative to `spec/versions/0.8/tests/`.
-/// Every entry MUST carry a justification comment naming the gap and the
-/// spec section; a fixture failing that is NOT listed here is a hard
-/// test failure by design (never a tolerated count). Removing an entry
-/// when the grammar gains support is a one-line follow-up.
-const KNOWN_VALID_FAILURES: &[&str] = &[
-    // ---- Gap G5: root-kind detection is not enforced (§ 5.0.1 rule 7). ----
-    // Valid only under stateful root-kind dispatch, which tree-sitter's
-    // regex lexer cannot express; see docs/spec-0.7-gap-audit.md § 5.
-    // An open design decision, deliberately not fixed blindly.
-    //
-    // Unterminated leading quote: § 5.3.3 / § 5.0.1 rule 7 re-classify
-    // the line as a root-Array String item; the grammar lexes a pair
-    // and errors. The .canonical twins are byte-identical to their
-    // primaries (the decoded value is not representable, so the writer
-    // echoes the raw line).
-    "valid/quoted_keys/unterminated_double_quote_first_line_falls_back.ktav",
-    "valid/quoted_keys/unterminated_double_quote_first_line_falls_back.canonical.ktav",
-    "valid/quoted_keys/unterminated_leading_quote_falls_back_to_array_item.ktav",
-    "valid/quoted_keys/unterminated_leading_quote_falls_back_to_array_item.canonical.ktav",
-    //
-    // Canonical form of a root-Array whose sole item is the String
-    // "a:b": the bare line must be read as an Array item (§ 5.0.1
-    // rule 7 / § 5.4 rule 9), but without root-kind state the grammar
-    // commits to object_pair and then — correctly — rejects it for
-    // missing whitespace after the separator (§ 6.10). Same G5
-    // decision.
-    "valid/top_level_array/glued_colon_first_item.canonical.ktav",
-];
 
 fn spec_tests_dir() -> PathBuf {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("spec/versions/0.8/tests");
@@ -290,7 +250,6 @@ fn conformance_valid_fixtures_parse_cleanly() {
 
     let mut parser = make_parser();
     let mut failures: Vec<String> = Vec::new();
-    let mut allowed_failures: Vec<String> = Vec::new();
     let total = files.len();
     for path in &files {
         let bytes = fs::read(path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
@@ -303,48 +262,96 @@ fn conformance_valid_fixtures_parse_cleanly() {
         };
         let (errs, miss) = count_errors(tree.root_node());
         if errs > 0 || miss > 0 {
-            // Path-suffix match against the known-failures allow-list,
-            // using forward slashes to stay portable across OSes.
-            let rel = path
-                .strip_prefix(&tests_dir)
-                .unwrap_or(path)
-                .to_string_lossy()
-                .replace('\\', "/");
-            if KNOWN_VALID_FAILURES.iter().any(|sfx| rel == *sfx) {
-                allowed_failures.push(rel);
-            } else {
-                failures.push(format!(
-                    "{}: {} ERROR + {} MISSING nodes; sexp:\n{}",
-                    path.display(),
-                    errs,
-                    miss,
-                    tree.root_node().to_sexp()
-                ));
-            }
+            failures.push(format!(
+                "{}: {} ERROR + {} MISSING nodes; sexp:\n{}",
+                path.display(),
+                errs,
+                miss,
+                tree.root_node().to_sexp()
+            ));
         }
     }
 
     if !failures.is_empty() {
         panic!(
-            "{} of {} valid fixtures failed (outside the known-failures \
-             allow-list):\n{}",
+            "{} of {} valid fixtures failed:\n{}",
             failures.len(),
             total,
             failures.join("\n---\n")
         );
     }
-    assert_eq!(
-        allowed_failures.len(),
-        KNOWN_VALID_FAILURES.len(),
-        "a documented grammar gap no longer fails; update the allow-list"
-    );
-    eprintln!(
-        "conformance: {} valid fixtures parsed cleanly ({} known \
-         grammar gaps allowed: {:?})",
-        total - allowed_failures.len(),
-        allowed_failures.len(),
-        allowed_failures
-    );
+    eprintln!("conformance: {total} valid files parsed cleanly");
+}
+
+#[test]
+fn valid_fixture_roots_match_json_oracles() {
+    let tests_dir = spec_tests_dir();
+    let files = collect_ktav_files(&tests_dir.join("valid"));
+    let mut parser = make_parser();
+    for path in files {
+        let name = path.file_name().unwrap().to_str().unwrap();
+        let stem = name
+            .strip_suffix(".canonical.ktav")
+            .or_else(|| name.strip_suffix(".ktav"))
+            .unwrap();
+        let oracle = path.with_file_name(format!("{stem}.json"));
+        let expected: serde_json::Value =
+            serde_json::from_slice(&fs::read(&oracle).expect("read JSON oracle"))
+                .expect("parse JSON oracle");
+        let source = fs::read(&path).expect("read Ktav fixture");
+        let tree = parser.parse(&source, None).expect("parser returned None");
+        assert!(
+            !tree.root_node().has_error(),
+            "{}: {}",
+            path.display(),
+            tree.root_node().to_sexp()
+        );
+        let mut cursor = tree.root_node().walk();
+        let content: Vec<_> = tree
+            .root_node()
+            .named_children(&mut cursor)
+            .filter(|node| node.kind() != "comment" && node.kind() != "blank_line")
+            .collect();
+        match expected {
+            serde_json::Value::Object(_) => {
+                if let Some(first) = content.first() {
+                    if first.kind() == "object_pair" {
+                        assert!(
+                            content.iter().all(|node| node.kind() == "object_pair"),
+                            "{}: {}",
+                            path.display(),
+                            tree.root_node().to_sexp()
+                        );
+                    } else {
+                        assert_eq!(first.kind(), "top_array_item", "{}", path.display());
+                        assert_eq!(content.len(), 1, "{}", path.display());
+                        let value = first.child_by_field_name("value").expect("root value");
+                        assert!(
+                            ["compound_object", "inline_object", "empty_object"]
+                                .contains(&value.kind()),
+                            "{}: {}",
+                            path.display(),
+                            tree.root_node().to_sexp()
+                        );
+                    }
+                }
+            }
+            serde_json::Value::Array(_) => {
+                assert!(!content.is_empty(), "{}: empty Array root", path.display());
+                assert!(
+                    content.iter().all(|node| node.kind() == "top_array_item"),
+                    "{}: {}",
+                    path.display(),
+                    tree.root_node().to_sexp()
+                );
+                let value = content[0].child_by_field_name("value").expect("root value");
+                if ["compound_array", "inline_array", "empty_array"].contains(&value.kind()) {
+                    assert_eq!(content.len(), 1, "{}", path.display());
+                }
+            }
+            _ => panic!("{}: oracle root is not Object or Array", oracle.display()),
+        }
+    }
 }
 
 #[test]
@@ -455,5 +462,114 @@ fn editor_queries_compile() {
     ] {
         tree_sitter::Query::new(&language, source)
             .unwrap_or_else(|error| panic!("{name} query failed: {error}"));
+    }
+}
+
+#[test]
+fn first_content_line_fixes_the_root_kind() {
+    let mut parser = make_parser();
+    for source in [
+        "## header\nplain\nhost: localhost\n",
+        "## header\nplain\nhost: localhost",
+    ] {
+        let array = parser.parse(source, None).expect("parser returned None");
+        let array_tree = array.root_node().to_sexp();
+        assert!(!array.root_node().has_error(), "{array_tree}");
+        assert_eq!(
+            array_tree.matches("(top_array_item").count(),
+            2,
+            "{array_tree}"
+        );
+        assert!(!array_tree.contains("(object_pair"), "{array_tree}");
+    }
+
+    for source in ["a: 1\nplain\n", "{a: 1}\nb: 2\n", "[\n  1\n]\nextra\n"] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        assert!(
+            tree.root_node().has_error(),
+            "{source:?}: {}",
+            tree.root_node().to_sexp()
+        );
+    }
+}
+
+#[test]
+fn first_line_non_pairs_are_array_items() {
+    let mut parser = make_parser();
+    for source in [
+        "a:b\n",
+        "a:b",
+        "'tis the season: fa\n",
+        "'tis the season: fa",
+        "\"tis the season: fa\n",
+        "\"tis the season: fa",
+    ] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        let sexp = tree.root_node().to_sexp();
+        assert!(!tree.root_node().has_error(), "{source:?}: {sexp}");
+        assert!(sexp.contains("(top_array_item"), "{source:?}: {sexp}");
+        assert!(!sexp.contains("(object_pair"), "{source:?}: {sexp}");
+    }
+}
+
+#[test]
+fn first_line_pair_detection_respects_quotes_and_escapes() {
+    let mut parser = make_parser();
+    for source in [
+        "\"a:b\": 1\n",
+        "a.\"b:c\": 1\n",
+        "foo'bar: 1\n",
+        "a\\:b: 1\n",
+    ] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        let sexp = tree.root_node().to_sexp();
+        assert!(!tree.root_node().has_error(), "{source:?}: {sexp}");
+        assert!(sexp.contains("(object_pair"), "{source:?}: {sexp}");
+    }
+    for source in ["a:b: c\n", "a\\:b\n", "\"a:b\"\n"] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        let sexp = tree.root_node().to_sexp();
+        assert!(!tree.root_node().has_error(), "{source:?}: {sexp}");
+        assert!(sexp.contains("(top_array_item"), "{source:?}: {sexp}");
+        assert!(!sexp.contains("(object_pair"), "{source:?}: {sexp}");
+    }
+    for source in ["a,b: 1\n", "[bad]: 1\n"] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        assert!(
+            tree.root_node().has_error(),
+            "{source:?}: {}",
+            tree.root_node().to_sexp()
+        );
+    }
+}
+
+#[test]
+fn editing_the_first_line_reselects_the_root_kind() {
+    for (before, after) in [
+        ("a: 1\nb: 2\n", "word\nb: 2\n"),
+        ("word\nb: 2\n", "a: 1\nb: 2\n"),
+    ] {
+        let mut parser = make_parser();
+        let mut old = parser.parse(before, None).expect("initial parse");
+        old.edit(&tree_sitter::InputEdit {
+            start_byte: 0,
+            old_end_byte: 4,
+            new_end_byte: 4,
+            start_position: tree_sitter::Point::new(0, 0),
+            old_end_position: tree_sitter::Point::new(0, 4),
+            new_end_position: tree_sitter::Point::new(0, 4),
+        });
+        let incremental = parser.parse(after, Some(&old)).expect("incremental parse");
+        let fresh = parser.parse(after, None).expect("fresh parse");
+        assert_eq!(
+            incremental.root_node().to_sexp(),
+            fresh.root_node().to_sexp(),
+            "root kind changed after edit from {before:?} to {after:?}"
+        );
+        assert!(
+            !incremental.root_node().has_error(),
+            "{}",
+            incremental.root_node().to_sexp()
+        );
     }
 }

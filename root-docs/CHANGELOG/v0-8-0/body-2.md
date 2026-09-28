@@ -5,6 +5,9 @@
   trimmed at token edges, not the narrower ASCII-only set used before.
 - A lone CR is accepted as a valid line terminator (§ 3.2).
 - A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
+- The first content line fixes the root kind (§ 5.0.1): pair-shaped Array
+  items stay strings, and closed inline roots reject later content.
+  A glued colon or unterminated leading quote can select an Array root.
 - Inline raw scalars after `::` get their own dedicated grammar rule
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
 - Embedded NUL bytes in multi-line string content are treated as content,
@@ -19,7 +22,8 @@
 
 ### Changed
 
-- Conformance suite walks the spec **0.8.0** corpus (was 0.6).
+- Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
+  valid-fixture allow-list and checks root kinds against JSON oracles.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
   prefers OIDC and can fall back to a registry token.
 
@@ -30,6 +34,10 @@
   отсекается на границах токенов, а не прежний, более узкий набор только из ASCII.
 - Одиночный CR принимается как корректный терминатор строки (§ 3.2).
 - Сырой `#` допускается как обычный символ ключа (§ 3.4, § 4).
+- Первая содержательная строка фиксирует вид корня (§ 5.0.1): строки
+  Array, похожие на пары, остаются строками; после закрытого inline-корня
+  новый контент ошибочен. Склеенное `:` или незакрытая начальная кавычка
+  могут выбрать корень Array.
 - Inline-raw-скаляры после `::` получают собственное правило
   грамматики (§ 4, § 5.8.5), вместо провала на общий путь скаляра.
 - Встроенный NUL-байт в содержимом многострочной строки считается частью
@@ -45,7 +53,8 @@
 
 ### Изменено
 
-- Conformance-набор обходит корпус спецификации **0.8.0** (ранее 0.6).
+- Conformance-набор обходит корпус спецификации **0.8.0** (ранее 0.6)
+  без исключений valid-фикстур и сверяет вид корня с JSON-оракулами.
 - CI: `cargo publish` использует Trusted Publishing (OIDC);
   `npm publish` предпочитает OIDC, но может использовать токен реестра.
 
@@ -56,6 +65,9 @@
   并在词元边缘裁去，而非此前较窄的纯 ASCII 集。
 - 单独的 CR 现在被接受为合法的行终止符（§ 3.2）。
 - 原始 `#` 现在允许作为普通键字符（§ 3.4、§ 4）。
+- 首个内容行决定根类型（§ 5.0.1）：Array 中形似键值对的行仍是
+  字符串，已闭合的内联根之后不能再有内容。紧贴的 `:` 或未闭合的
+  起始引号可使根类型成为 Array。
 - `::` 之后的内联 raw 标量现在有专用的语法规则
   （§ 4、§ 5.8.5），而不再落入通用标量路径。
 - 多行字符串内容中的嵌入 NUL 字节现在视为内容而非 EOF；外部扫描器
@@ -70,7 +82,8 @@
 
 ### 变更
 
-- 一致性套件现在遍历规范 **0.8.0** 语料（此前为 0.6）。
+- 一致性套件现在遍历规范 **0.8.0** 语料（此前为 0.6），不再豁免
+  有效样例，并根据 JSON 预期结果检查根类型。
 - CI：`cargo publish` 使用 Trusted Publishing（OIDC）；
   `npm publish` 优先使用 OIDC，也可回退到 registry 令牌。
 

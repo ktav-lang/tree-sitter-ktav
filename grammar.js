@@ -92,6 +92,8 @@ module.exports = grammar({
     $._float_eof,        // complete float at true EOF, without a newline
     $._top_scalar_eof,   // complete root scalar at true EOF
     $._comment_eof,      // final comment without a newline
+    $._root_fallback_scalar, // first-line scalar that is not a pair candidate
+    $._array_follow_eof, // final Array item may contain a colon
   ],
 
   conflicts: $ => [],
@@ -104,11 +106,6 @@ module.exports = grammar({
   word: $ => $._bare_key_segment,
 
   rules: {
-    // The top-level document is a sequence of lines. Per spec § 5.0.1
-    // the root may be either an Object or an Array. Tree-sitter accepts
-    // both kinds of line anywhere; semantic dispatch is left to the
-    // reference parser.
-    //
     // Spec 0.7.0 § 3.1: a conforming parser MUST skip exactly one leading
     // U+FEFF byte-order mark if it is the very first code point of the
     // document. This is a guaranteed grammar property, not error-recovery
@@ -117,14 +114,37 @@ module.exports = grammar({
     // BOM, or one anywhere else, is ordinary content (§ 3.1) — already
     // handled correctly since U+FEFF is not excluded from any key/scalar
     // content class.
-    source_file: $ => seq(optional(/\uFEFF/), repeat($._line)),
+    // The first content line fixes the root kind; aliases preserve the CST.
+    source_file: $ => seq(
+      optional(/\uFEFF/),
+      repeat($._trivia_line),
+      optional(choice(
+        seq($.object_pair, repeat(choice($._trivia_line, $.object_pair))),
+        seq(alias($._root_array_first_item, $.top_array_item),
+            repeat(choice($._trivia_line, $.top_array_item))),
+        seq(alias($._root_single_item, $.top_array_item), repeat($._trivia_line)),
+      )),
+    ),
 
     // ---- Top-level lines ----
-    _line: $ => choice(
-      $.comment,
-      $.blank_line,
-      $.object_pair,
-      $.top_array_item,
+    _trivia_line: $ => choice($.comment, $.blank_line),
+
+    _root_single_item: $ => field('value', choice(
+      $.compound_object, $.compound_array, $.empty_object, $.empty_array,
+      $.inline_object, $.inline_array,
+    )),
+
+    _root_array_first_item: $ => choice(
+      seq(field('marker', $.sep_raw), choice(
+        field('value', $.empty_value),
+        seq($._marker_ws, field('value', $.raw_scalar)),
+      )),
+      field('value', choice(
+        $.multiline_stripped, $.multiline_verbatim,
+        $.empty_paren, $.empty_double_paren,
+        $.keyword, $.integer, $.float, $.top_scalar,
+      )),
+      field('value', alias($._root_fallback_scalar, $.top_scalar)),
     ),
 
     blank_line: $ => $._newline,
@@ -157,17 +177,18 @@ module.exports = grammar({
       seq(
         field('key', $.key),
         field('separator', $.sep_raw),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.raw_scalar)),
+        choice(
+          field('value', $.empty_value),
+          seq($._marker_ws, field('value', $.raw_scalar)),
+        ),
       ),
       // After `:` the body goes through the full § 5.2 dispatch.
       seq(
         field('key', $.key),
         field('separator', $.sep_string),
-        $._marker_ws,
         choice(
           field('value', $.empty_value),
-          field('value', $._value_line),
+          seq($._marker_ws, field('value', $._value_line)),
         ),
       ),
     ),
@@ -340,14 +361,14 @@ module.exports = grammar({
       $.scalar,
     ),
 
-    // Empty value = separator immediately followed by newline.
-    empty_value: $ => $._newline,
+    // Empty value = separator followed by a line end or true EOF.
+    empty_value: $ => $._eol,
 
     // ---- Empty inline compounds (one full line) ----
-    empty_object:       $ => seq(token(prec(5, '{}')),   $._newline),
-    empty_array:        $ => seq(token(prec(5, '[]')),   $._newline),
-    empty_paren:        $ => seq(token(prec(5, '()')),   $._newline),
-    empty_double_paren: $ => seq(token(prec(5, '(())')), $._newline),
+    empty_object:       $ => seq(token(prec(5, '{}')),   $._eol),
+    empty_array:        $ => seq(token(prec(5, '[]')),   $._eol),
+    empty_paren:        $ => seq(token(prec(5, '()')),   $._eol),
+    empty_double_paren: $ => seq(token(prec(5, '(())')), $._eol),
 
     // ---- Multi-line compounds ----
     open_brace:    $ => token(prec(4, /\{[ \t]*(\r\n|\r|\n)/)),
@@ -519,8 +540,10 @@ module.exports = grammar({
     array_item: $ => choice(
       seq(
         field('marker', $.sep_raw),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.raw_scalar)),
+        choice(
+          field('value', $.empty_value),
+          seq($._marker_ws, field('value', $.raw_scalar)),
+        ),
       ),
       // Plain value item — same set as object pair value.
       field('value', $._value_line),
@@ -530,8 +553,10 @@ module.exports = grammar({
     top_array_item: $ => choice(
       seq(
         field('marker', $.sep_raw),
-        $._marker_ws,
-        field('value', choice($.empty_value, $.raw_scalar)),
+        choice(
+          field('value', $.empty_value),
+          seq($._marker_ws, field('value', $.raw_scalar)),
+        ),
       ),
       field('value', $.compound_object),
       field('value', $.compound_array),
@@ -547,7 +572,11 @@ module.exports = grammar({
       field('value', $.integer),
       field('value', $.float),
       field('value', $.top_scalar),
+      field('value', alias($._array_follow_text, $.top_scalar)),
+      field('value', alias($._array_follow_eof, $.top_scalar)),
     ),
+
+    _array_follow_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\(\r\n][^\r\n]*(\r\n|\r|\n)/),
 
     // `top_scalar` — bare-scalar at the document root. Forbids `:` so
     // that pair-shaped lines always parse as `object_pair`.

@@ -195,6 +195,11 @@ fn root_items_and_comments_keep_their_tree_at_eof() {
         "true",
         ":: raw",
         "[a, b]",
+        "{}",
+        "[]",
+        "()",
+        "(())",
+        "::",
         "## comment",
         "a: 1\n## comment",
     ] {
@@ -209,6 +214,57 @@ fn root_items_and_comments_keep_their_tree_at_eof() {
             at_eof.root_node().to_sexp(),
             with_newline.root_node().to_sexp(),
             "EOF form of {source:?}"
+        );
+    }
+}
+
+#[test]
+fn last_array_item_keeps_its_type_at_eof() {
+    for item in [
+        "host: localhost",
+        "a:b",
+        "'tis the season: fa",
+        "123",
+        "1.5",
+        "0_7",
+        "true",
+        "## comment",
+        ":: raw",
+        "{}",
+        "[]",
+        "()",
+        "(())",
+        "::",
+    ] {
+        let source = format!("plain\n{item}");
+        let with_newline = parse(format!("{source}\n").as_bytes());
+        let at_eof = parse(source.as_bytes());
+        assert!(
+            !at_eof.root_node().has_error(),
+            "{item:?}: {}",
+            at_eof.root_node().to_sexp()
+        );
+        assert_eq!(
+            at_eof.root_node().to_sexp(),
+            with_newline.root_node().to_sexp(),
+            "different Array item at EOF: {item:?}"
+        );
+    }
+}
+
+#[test]
+fn empty_pair_value_parses_at_eof() {
+    for source in ["a:", "a::", "a: ", "a:: ", "a:\u{3000}", "a::\u{3000}"] {
+        let with_newline = parse(format!("{source}\n").as_bytes());
+        let at_eof = parse(source.as_bytes());
+        assert!(
+            !at_eof.root_node().has_error(),
+            "{source:?}: {}",
+            at_eof.root_node().to_sexp()
+        );
+        assert_eq!(
+            at_eof.root_node().to_sexp(),
+            with_newline.root_node().to_sexp()
         );
     }
 }

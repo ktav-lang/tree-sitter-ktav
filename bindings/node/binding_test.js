@@ -48,3 +48,14 @@ test("root scalars and comments parse without a final newline", () => {
     assert.equal(eofTree.rootNode.toString(), newlineTree.rootNode.toString());
   }
 });
+
+test("the first content line fixes the root kind", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const source of ["a:b\n", "a:b", "'tis the season: fa\n", "plain\nhost: localhost\n", "plain\nhost: localhost"]) {
+    const tree = parser.parse(source);
+    assert.equal(tree.rootNode.hasError, false);
+    assert.ok(tree.rootNode.namedChildren.every((node) => node.type === "top_array_item"));
+  }
+  assert.equal(parser.parse("a: 1\nplain\n").rootNode.hasError, true);
+});

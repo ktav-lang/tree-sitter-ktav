@@ -1,6 +1,6 @@
 // Tree-sitter external scanner for Ktav.
 //
-// Emits ten tokens that the LR(1) grammar generated from grammar.js
+// Emits twelve tokens that the LR(1) grammar generated from grammar.js
 // cannot express on its own:
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
@@ -54,6 +54,8 @@
 //   _integer_eof / _float_eof — complete numeric values at true EOF.
 //                      Unlike regex prefixes, these reject trailing text.
 //   _top_scalar_eof / _comment_eof — complete root scalar/comment at EOF.
+//   _root_fallback_scalar — first-line scalar without a pair separator.
+//   _array_follow_eof — final Array scalar, including pair-shaped text.
 //
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
@@ -74,6 +76,8 @@ enum TokenType {
     FLOAT_EOF,
     TOP_SCALAR_EOF,
     COMMENT_EOF,
+    ROOT_FALLBACK_SCALAR,
+    ARRAY_FOLLOW_EOF,
 };
 
 void *tree_sitter_ktav_external_scanner_create(void) {
@@ -139,6 +143,12 @@ static bool scan_digit_run(TSLexer *lexer, int base) {
             if (digit < 0 || digit >= base) return true;
         }
     }
+}
+
+static bool is_keyword(const char *prefix, unsigned length) {
+    return (length == 4 &&
+            (!memcmp(prefix, "true", 4) || !memcmp(prefix, "null", 4))) ||
+           (length == 5 && !memcmp(prefix, "false", 5));
 }
 
 static bool scan_eof_number(TSLexer *lexer, const bool *valid_symbols) {
@@ -226,6 +236,140 @@ static bool consume_line_terminator(TSLexer *lexer) {
     return false;
 }
 
+static bool scan_root_fallback_scalar(TSLexer *lexer, const bool *valid_symbols) {
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
+    int32_t first = lexer->lookahead;
+    if (lexer->eof(lexer) || first == ':' || first == '{' || first == '[' ||
+        first == '(' || first == '}' || first == ']') return false;
+    if (first == '#') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '#') {
+            lexer->advance(lexer, false);
+            while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+                lexer->advance(lexer, false);
+            }
+            if (!lexer->eof(lexer) || !valid_symbols[COMMENT_EOF]) return false;
+            lexer->mark_end(lexer);
+            lexer->result_symbol = COMMENT_EOF;
+            return true;
+        }
+    }
+    if ((first == '+' || first == '-' || (first >= '0' && first <= '9')) &&
+        (valid_symbols[INTEGER_EOF] || valid_symbols[FLOAT_EOF])) {
+        if (scan_eof_number(lexer, valid_symbols)) return true;
+    }
+
+    int32_t quote = 0;
+    bool segment_start = first != '#';
+    bool escaped = false;
+    bool saw_colon = false;
+    bool saw_quote = false;
+    bool first_separator_seen = false;
+    char prefix[6] = {0};
+    unsigned length = 0;
+    unsigned last_content = 0;
+    while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+        int32_t c = lexer->lookahead;
+        if (length < 6) {
+            prefix[length] = c < 128 ? (char)c : 0;
+            length++;
+        }
+        if (!is_h_ws(c)) last_content = length;
+        if (c == ':') saw_colon = true;
+        if (escaped) {
+            escaped = false;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        if (c == '\\') {
+            escaped = true;
+            segment_start = false;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        if (quote != 0) {
+            if (c == quote) quote = 0;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        if (segment_start && (c == '\'' || c == '"' || c == '`')) {
+            quote = c;
+            saw_quote = true;
+            segment_start = false;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        if (c == '.') {
+            segment_start = true;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        if (c == ':' && !first_separator_seen) {
+            first_separator_seen = true;
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == ':' || is_ktav_ws(lexer->lookahead) ||
+                lexer->eof(lexer)) return false;
+            continue;
+        }
+        if (!is_h_ws(c)) segment_start = false;
+        lexer->advance(lexer, false);
+    }
+    if (saw_colon || saw_quote) {
+        if (!consume_line_terminator(lexer)) return false;
+        lexer->result_symbol = ROOT_FALLBACK_SCALAR;
+        return true;
+    }
+    if (!lexer->eof(lexer) || !valid_symbols[TOP_SCALAR_EOF]) return false;
+    if ((first == 't' || first == 'f' || first == 'n') &&
+        is_keyword(prefix, last_content)) return false;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = TOP_SCALAR_EOF;
+    return true;
+}
+
+static bool scan_array_follow_eof(TSLexer *lexer, const bool *valid_symbols) {
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
+    int32_t first = lexer->lookahead;
+    if (lexer->eof(lexer) || first == ':' || first == '{' || first == '[' ||
+        first == '(') return false;
+    if (first == '#') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '#') {
+            lexer->advance(lexer, false);
+            while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+                lexer->advance(lexer, false);
+            }
+            if (!lexer->eof(lexer) || !valid_symbols[COMMENT_EOF]) return false;
+            lexer->mark_end(lexer);
+            lexer->result_symbol = COMMENT_EOF;
+            return true;
+        }
+    }
+    if ((first == '+' || first == '-' || (first >= '0' && first <= '9')) &&
+        (valid_symbols[INTEGER_EOF] || valid_symbols[FLOAT_EOF])) {
+        if (scan_eof_number(lexer, valid_symbols)) return true;
+    }
+
+    char prefix[6] = {0};
+    unsigned length = 0;
+    unsigned last_content = 0;
+    while (!lexer->eof(lexer)) {
+        int32_t c = lexer->lookahead;
+        if (c == '\r' || c == '\n') return false;
+        if (length < 6) {
+            prefix[length] = c < 128 ? (char)c : 0;
+            length++;
+        }
+        if (!is_h_ws(c)) last_content = length;
+        lexer->advance(lexer, false);
+    }
+    if ((first == 't' || first == 'f' || first == 'n') &&
+        is_keyword(prefix, last_content)) return false;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = ARRAY_FOLLOW_EOF;
+    return true;
+}
+
 bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     (void)payload;
 
@@ -239,6 +383,11 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
     // at the current position so the token has zero length.
     if (valid_symbols[MARKER_WS]) {
         int32_t c = lexer->lookahead;
+        // An empty value's line end wins over a zero-width separator check.
+        if (valid_symbols[EOL] && consume_line_terminator(lexer)) {
+            lexer->result_symbol = EOL;
+            return true;
+        }
         // Spec 0.7.0 § 4 `<sep-end> ::= 1*ws | &line-end`: any of the 25
         // § 3.3 whitespace code points satisfies "1 ws", not just ASCII.
         if (is_ktav_ws(c) || lexer->eof(lexer)) {
@@ -347,6 +496,15 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
         return true;
     }
 
+    if (valid_symbols[ROOT_FALLBACK_SCALAR]) {
+        // A failed lookahead has advanced the lexer; never try a second token.
+        return scan_root_fallback_scalar(lexer, valid_symbols);
+    }
+
+    if (valid_symbols[ARRAY_FOLLOW_EOF]) {
+        return scan_array_follow_eof(lexer, valid_symbols);
+    }
+
     if (valid_symbols[TOP_SCALAR_EOF] || valid_symbols[COMMENT_EOF] ||
         valid_symbols[INTEGER_EOF] || valid_symbols[FLOAT_EOF]) {
         while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
@@ -387,9 +545,7 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
                 if (!is_h_ws(c)) last_content = length;
                 lexer->advance(lexer, false);
             }
-            if ((last_content == 4 &&
-                 (!memcmp(prefix, "true", 4) || !memcmp(prefix, "null", 4))) ||
-                (last_content == 5 && !memcmp(prefix, "false", 5))) return false;
+            if (is_keyword(prefix, last_content)) return false;
             lexer->mark_end(lexer);
             lexer->result_symbol = TOP_SCALAR_EOF;
             return true;

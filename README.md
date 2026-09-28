@@ -170,10 +170,10 @@ so consumers do not need the CLI to build.
 ## Status
 
 `0.8.0` — implements [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
-The grammar is checked against the spec 0.8 valid fixtures, with five
-named root-kind cases still producing error nodes. See the allow-list in
-`tests/conformance.rs`. Tree-sitter supplies editor syntax trees; it
-does not perform the semantic validation of the reference Rust parser.
+The grammar parses every pinned spec 0.8 valid fixture without error and
+checks each Object/Array root against its JSON oracle. Tree-sitter supplies
+editor syntax trees; it does not perform the semantic validation of the
+reference Rust parser.
 
 ## License
 

@@ -1,14 +1,62 @@
 ==================
-§ 6.10: marker glued to value is rejected (plain colon)
-:error
+§ 5.0.1: a glued colon on the first line selects an Array string
 ==================
 key:value
 
 ---
 
 (source_file
-  (ERROR
-    (key)))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+§ 5.0.1: an unterminated leading quote selects an Array string
+==================
+'tis the season: fa
+
+---
+
+(source_file
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+§ 5.0.1: pair-shaped lines remain strings after an Array first item
+==================
+plain
+host: localhost
+
+---
+
+(source_file
+  (top_array_item
+    value: (top_scalar))
+  (top_array_item
+    value: (top_scalar)))
+
+==================
+§ 5.0.1: a bare line after an Object first pair is invalid
+:error
+==================
+a: 1
+plain
+
+---
+
+(source_file
+  (ERROR))
+
+==================
+§ 6.10: a glued colon after an Object root is rejected
+:error
+==================
+root: 1
+key:value
+
+---
+
+(source_file
+  (ERROR))
 
 ==================
 § 6.10: raw marker glued to value is rejected

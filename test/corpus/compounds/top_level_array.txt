@@ -35,8 +35,9 @@ plain-string
     value: (top_scalar)))
 
 ==================
-Top-level Array — nested objects
+Top-level Array — nested objects after the first scalar item
 ==================
+items
 {
     name: alice
     port: 8080
@@ -49,6 +50,8 @@ Top-level Array — nested objects
 ---
 
 (source_file
+  (top_array_item
+    value: (top_scalar))
   (top_array_item
     value: (compound_object
       (open_brace)
@@ -75,8 +78,9 @@ Top-level Array — nested objects
       (close_brace))))
 
 ==================
-Top-level Array — nested arrays
+Top-level Array — nested arrays after the first scalar item
 ==================
+items
 [
     a
     b
@@ -89,6 +93,8 @@ Top-level Array — nested arrays
 ---
 
 (source_file
+  (top_array_item
+    value: (top_scalar))
   (top_array_item
     value: (compound_array
       (open_bracket)
@@ -201,8 +207,9 @@ null
       (kw_null))))
 
 ==================
-Top-level empty inline compounds
+Top-level empty inline compounds after the first scalar item
 ==================
+items
 {}
 []
 ()
@@ -211,6 +218,8 @@ Top-level empty inline compounds
 ---
 
 (source_file
+  (top_array_item
+    value: (top_scalar))
   (top_array_item
     value: (empty_object))
   (top_array_item

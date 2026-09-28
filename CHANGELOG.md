@@ -37,6 +37,9 @@ the specification (0.7.x was never tagged for this package).
   trimmed at token edges, not the narrower ASCII-only set used before.
 - A lone CR is accepted as a valid line terminator (§ 3.2).
 - A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
+- The first content line fixes the root kind (§ 5.0.1): pair-shaped Array
+  items stay strings, and closed inline roots reject later content.
+  A glued colon or unterminated leading quote can select an Array root.
 - Inline raw scalars after `::` get their own dedicated grammar rule
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
 - Embedded NUL bytes in multi-line string content are treated as content,
@@ -51,7 +54,8 @@ the specification (0.7.x was never tagged for this package).
 
 ### Changed
 
-- Conformance suite walks the spec **0.8.0** corpus (was 0.6).
+- Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
+  valid-fixture allow-list and checks root kinds against JSON oracles.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
   prefers OIDC and can fall back to a registry token.
 
