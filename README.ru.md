@@ -20,8 +20,9 @@
 
 Ktav (иврит **כְּתָב**, «писание») — текстовый формат конфигурации
 JSON-формы (скаляры, массивы, объекты, `null`, булево), но без кавычек
-вокруг строк, без запятых, с точечными ключами (`server.port: 8080`)
-для вложенности. Полная спецификация (та же, на которую ориентируются
+вокруг строк; между обычными элементами запятых нет, однако в inline-
+структурах они используются. Для вложенности служат точечные ключи
+(`server.port: 8080`). Полная спецификация (та же, на которую ориентируются
 все официальные реализации Ktav) лежит в
 [`ktav-lang/spec`](https://github.com/ktav-lang/spec).
 
@@ -81,25 +82,33 @@ console.log(tree.rootNode.toString());
 
 ### Neovim (с [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter))
 
-Пока грамматика не зарегистрирована в апстриме, добавьте вручную:
+В текущей основной ветке `nvim-treesitter` больше не используется устаревший
+API регистрации `get_parser_configs()`. Соберите библиотеку парсера из
+репозитория грамматики и загрузите её через Tree-sitter API Neovim. CLI
+автоматически включает `src/scanner.c` при сборке этой грамматики:
 
 ```lua
-require("nvim-treesitter.parsers").get_parser_configs().ktav = {
-  install_info = {
-    url = "https://github.com/ktav-lang/tree-sitter-ktav",
-    files = { "src/parser.c" },
-    branch = "main",
-  },
-  filetype = "ktav",
-}
-
+require("nvim-treesitter").setup({})
 vim.filetype.add({ extension = { ktav = "ktav" } })
+vim.treesitter.language.add("ktav", {
+  path = vim.fn.stdpath("data") .. "/site/parser/ktav.so",
+})
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "ktav",
+  callback = function() vim.treesitter.start() end,
+})
 ```
 
-Затем `:TSInstall ktav`. Положите `queries/highlights.scm`,
-`queries/locals.scm` и `queries/injections.scm` в
-`~/.config/nvim/queries/ktav/` (либо позвольте `nvim-treesitter`
-подобрать их из репозитория грамматики).
+Сначала создайте целевой каталог `parser`. Например, в Unix выполните
+`mkdir -p ~/.local/share/nvim/site/parser`, затем из репозитория грамматики
+соберите библиотеку командой `npx tree-sitter build --output
+~/.local/share/nvim/site/parser/ktav.so`. Каталог и расширение `.so` здесь
+приведены как пример для Unix; используйте путь из `stdpath("data")` и
+расширение динамической библиотеки вашей платформы (например, `.dll` в
+Windows) и в команде сборки, и в Lua-конфигурации. Если список исходников
+задаётся явно, включите `src/parser.c` и `src/scanner.c`. Скопируйте
+`queries/highlights.scm`, `queries/locals.scm` и `queries/injections.scm` в
+`~/.config/nvim/queries/ktav/`.
 
 ### Helix
 
@@ -111,7 +120,7 @@ name      = "ktav"
 scope     = "source.ktav"
 file-types = ["ktav"]
 roots     = []
-comment-token = "#"
+comment-token = "##"
 indent    = { tab-width = 4, unit = "    " }
 
 [[grammar]]
@@ -129,38 +138,43 @@ source = { git = "https://github.com/ktav-lang/tree-sitter-ktav", rev = "main" }
 
 ## Узлы AST
 
-Грамматика генерирует следующие именованные узлы:
+Примеры именованных узлов CST (см. `src/node-types.json`):
 
 | Узел                       | Что захватывает                                  |
 |----------------------------|--------------------------------------------------|
 | `source_file`              | весь документ                                    |
-| `comment`                  | строковый комментарий `#`                        |
+| `comment`                  | строковый комментарий `##`                       |
 | `blank_line`               | пустую строку                                    |
 | `object_pair`              | строку `ключ SEP значение`                       |
-| `key` / `dotted_key`       | ключ (с возможным `.`-разбиением)                |
-| `sep_string` / `sep_raw` / `sep_int` / `sep_float` | четыре разделителя           |
+| `key` / `dotted_key`       | ключ и сегменты точечного пути                   |
+| `sep_string` / `sep_raw`   | разделители пар `:` и `::`                       |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова               |
-| `scalar`                   | универсальное однострочное значение              |
+| `integer` / `float`        | целые числа и числа с плавающей точкой            |
+| `scalar` / `raw_scalar`    | обычные и raw-значения в одну строку              |
 | `compound_object`          | блок `{` … `}`                                   |
 | `compound_array`           | блок `[` … `]`                                   |
-| `array_item`               | элемент массива                                  |
+| `inline_object` / `inline_array` | inline-структуры с элементами через запятую |
+| `inline_pair` / `inline_value` | пары и значения inline-структур              |
+| `array_item` / `top_array_item` | элементы массива и массива верхнего уровня    |
 | `multiline_stripped`       | блок `(` … `)`                                   |
 | `multiline_verbatim`       | блок `((` … `))`                                 |
 | `multiline_content_line`   | строка внутри многострочного значения            |
 | `empty_object` / `empty_array` / `empty_paren` / `empty_double_paren` | пустые inline-формы |
-| `empty_value`              | разделитель сразу за концом строки               |
+| `empty_value`              | разделитель и максимальная последовательность допустимых пробелов до конца строки или файла |
 
-`object_pair` экспонирует поля `key`, `separator`, `value`;
-`array_item` — `marker` (опционально) и `value`.
+`object_pair` и `inline_pair` имеют поля `key`, `separator`, `value`
+(`inline_pair.value` необязательно); `array_item` и `top_array_item` имеют
+обязательное `value` и необязательное `marker`.
 
 ## Сборка из исходников
 
 ```bash
-git clone https://github.com/ktav-lang/tree-sitter-ktav.git
+git clone --recurse-submodules https://github.com/ktav-lang/tree-sitter-ktav.git
 cd tree-sitter-ktav
-npm install
-npx tree-sitter generate     # writes src/parser.c
-npx tree-sitter test         # runs the corpus
+npm ci                       # устанавливает tree-sitter-cli 0.26.8 из lock-файла
+npx tree-sitter generate     # обновляет src/parser.c и связанные файлы
+npx tree-sitter test         # запускает корпус tree-sitter
+cargo test                   # тесты Rust, включая проверку соответствия спекам
 ```
 
 Файлы `src/parser.c`, `src/grammar.json`, `src/node-types.json` и

@@ -267,12 +267,12 @@ module.exports = grammar({
     // is always the start of an escape sequence (fourteen forms).
     _bare_key_segment: $ => token(seq(
       choice(
-        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\"'`]/,
+        /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\"'`]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       ),
       repeat(choice(
-        /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
+        /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
         /\\u[0-9a-fA-F]{4}/,
       )),
@@ -296,7 +296,7 @@ module.exports = grammar({
     // states, so tree-sitter never has to choose between them for the
     // same input position, even though both can start with a quote.
     _bare_key_segment_cont: $ => token(repeat1(choice(
-      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
+      /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
       /\\[\\,\}\]\{\[nr.:"'`]/,
       /\\u[0-9a-fA-F]{4}/,
     ))),
@@ -576,12 +576,12 @@ module.exports = grammar({
       field('value', alias($._array_follow_eof, $.top_scalar)),
     ),
 
-    _array_follow_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\(\r\n][^\r\n]*(\r\n|\r|\n)/),
+    _array_follow_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\}\]\(\r\n][^\r\n]*(\r\n|\r|\n)/),
 
     // `top_scalar` — bare-scalar at the document root. Forbids `:` so
     // that pair-shaped lines always parse as `object_pair`.
     top_scalar: $ => choice($._top_scalar_text, $._top_scalar_eof),
-    _top_scalar_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
+    _top_scalar_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\}\]\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
 
     // ---- Multi-line strings ----
     multiline_stripped: $ => seq(

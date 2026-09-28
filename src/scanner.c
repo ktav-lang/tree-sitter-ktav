@@ -331,7 +331,7 @@ static bool scan_array_follow_eof(TSLexer *lexer, const bool *valid_symbols) {
     while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
     int32_t first = lexer->lookahead;
     if (lexer->eof(lexer) || first == ':' || first == '{' || first == '[' ||
-        first == '(') return false;
+        first == '}' || first == ']' || first == '(') return false;
     if (first == '#') {
         lexer->advance(lexer, false);
         if (lexer->lookahead == '#') {
@@ -530,7 +530,8 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
             scan_eof_number(lexer, valid_symbols)) return true;
 
         if (valid_symbols[TOP_SCALAR_EOF] && first != ':' && first != '{' &&
-            first != '[' && first != '(' && first != '\r' && first != '\n' &&
+            first != '[' && first != '}' && first != ']' && first != '(' &&
+            first != '\r' && first != '\n' &&
             has_content) {
             char prefix[6] = {0};
             unsigned length = 0;

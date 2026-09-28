@@ -27,7 +27,7 @@
 
 你需要:
 
-- Node **18+**。
+- Node **24+**（文档工具要求此版本）。
 - 通过 [`rustup`](https://rustup.rs/) 安装的 Rust 工具链(用于
   Rust 绑定)。
 - `git`。
@@ -35,10 +35,14 @@
 ### 构建与测试
 
 ```bash
-npm install
-npx tree-sitter generate     # 生成 src/parser.c
-npx tree-sitter test         # 运行语料库
+npm ci                       # 安装 lock 文件固定的 tree-sitter-cli 0.26.8
+npx tree-sitter generate     # 重新生成 src/parser.c 等文件
+npx tree-sitter test         # 运行 tree-sitter 语料库
+cargo test                   # 运行 Rust 测试，包括规范一致性测试
 ```
+
+运行 `cargo test` 前，请执行 `git submodule update --init --recursive`
+初始化 `spec` 子模块；Rust 规范一致性测试需要其中固定版本的语料库。
 
 ## 语言政策
 

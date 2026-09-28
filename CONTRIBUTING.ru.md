@@ -29,7 +29,7 @@
 
 Нужно:
 
-- Node **18+**.
+- Node **24+** (требуется инструментам документации).
 - Rust toolchain через [`rustup`](https://rustup.rs/) (для Rust-
   биндингов).
 - `git`.
@@ -37,10 +37,15 @@
 ### Сборка и тесты
 
 ```bash
-npm install
-npx tree-sitter generate     # генерирует src/parser.c
-npx tree-sitter test         # запускает корпус
+npm ci                       # устанавливает tree-sitter-cli 0.26.8 из lock-файла
+npx tree-sitter generate     # обновляет src/parser.c и связанные файлы
+npx tree-sitter test         # запускает корпус tree-sitter
+cargo test                   # тесты Rust, включая проверку соответствия спекам
 ```
+
+Перед `cargo test` инициализируйте субмодуль `spec` командой
+`git submodule update --init --recursive`: Rust-тесты соответствия используют
+закреплённый в нём корпус.
 
 ## Языковая политика
 

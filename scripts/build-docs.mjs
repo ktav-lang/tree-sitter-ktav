@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// Rebuilds this repository's README/CHANGELOG/CONTRIBUTING (each in
-// en/ru/zh) from root-docs/, using @ktav-lang/polydoc. Run with
-// --check for a CI-friendly, read-only verification instead of
-// regenerating the files.
+// Rebuilds generated en/ru/zh Markdown from root-docs/.
+// Use --check to verify without writing.
 
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -12,7 +10,7 @@ import { configure, buildRootDocs, writeRootDocs, checkRootDocs } from '@ktav-la
 const LANGS = ['en', 'ru', 'zh'];
 configure({
   langs: LANGS,
-  rootDocuments: ['README', 'CHANGELOG', 'CONTRIBUTING'],
+  rootDocuments: ['README', 'CHANGELOG', 'CONTRIBUTING', 'docs/spec-0.7-gap-audit'],
 });
 
 // Per-unit validation proves every meaning has every language. It does
@@ -63,8 +61,8 @@ function structuralProblems(label, perLang) {
 function usage() {
   process.stderr.write(
     'usage: node scripts/build-docs.mjs [--check]\n' +
-    '  (no args)  regenerate README.md/.ru.md/.zh.md, CHANGELOG.md/.ru.md/.zh.md and\n' +
-    '             CONTRIBUTING.md/.ru.md/.zh.md from root-docs/\n' +
+    '  (no args)  regenerate README, CHANGELOG, CONTRIBUTING and archived 0.7 audit\n' +
+    '             Markdown (English, Russian and Chinese) from root-docs/\n' +
     '  --check    verify the generated files match root-docs/ without writing\n'
   );
 }

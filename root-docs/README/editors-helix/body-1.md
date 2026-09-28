@@ -9,7 +9,7 @@ name      = "ktav"
 scope     = "source.ktav"
 file-types = ["ktav"]
 roots     = []
-comment-token = "#"
+comment-token = "##"
 indent    = { tab-width = 4, unit = "    " }
 
 [[grammar]]
@@ -30,7 +30,7 @@ name      = "ktav"
 scope     = "source.ktav"
 file-types = ["ktav"]
 roots     = []
-comment-token = "#"
+comment-token = "##"
 indent    = { tab-width = 4, unit = "    " }
 
 [[grammar]]
@@ -51,7 +51,7 @@ name      = "ktav"
 scope     = "source.ktav"
 file-types = ["ktav"]
 roots     = []
-comment-token = "#"
+comment-token = "##"
 indent    = { tab-width = 4, unit = "    " }
 
 [[grammar]]

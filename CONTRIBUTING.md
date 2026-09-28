@@ -29,7 +29,7 @@ messages with `feat:` / `fix:` — no conventional commits here.
 
 You need:
 
-- Node **18+**.
+- Node **24+** (required by the documentation tooling).
 - A Rust toolchain via [`rustup`](https://rustup.rs/) (for the Rust
   bindings).
 - `git`.
@@ -37,10 +37,14 @@ You need:
 ### Build & test
 
 ```bash
-npm install
-npx tree-sitter generate     # generates src/parser.c
-npx tree-sitter test         # runs the corpus
+npm ci                       # installs the locked tree-sitter-cli 0.26.8
+npx tree-sitter generate     # regenerates src/parser.c and related files
+npx tree-sitter test         # runs the tree-sitter corpus
+cargo test                   # Rust tests, including spec conformance
 ```
+
+Initialize the `spec` submodule (`git submodule update --init --recursive`)
+before `cargo test`; the Rust conformance tests read its pinned corpus.
 
 ## Language policy
 

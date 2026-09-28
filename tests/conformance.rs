@@ -355,6 +355,90 @@ fn valid_fixture_roots_match_json_oracles() {
 }
 
 #[test]
+fn spec_08_known_syntactic_invalid_inputs_surface_errors() {
+    let mut parser = make_parser();
+    let invalid_dir = spec_tests_dir().join("invalid");
+    let mut found = [false; 3];
+    for path in collect_ktav_files(&invalid_dir) {
+        let bytes = fs::read(&path).expect("read invalid fixture");
+        let first_line = bytes
+            .split(|byte| *byte == b'\r' || *byte == b'\n')
+            .next()
+            .unwrap_or_default();
+        let first_content = first_line
+            .iter()
+            .find(|&&byte| !matches!(byte, b' ' | b'\t' | 0x0B | 0x0C));
+        let bad_control_key = first_line
+            .split(|byte| *byte == b':')
+            .next()
+            .unwrap_or_default()
+            .contains(&0x1C);
+        let cases = [
+            first_content.copied() == Some(b'}'),
+            first_content.copied() == Some(b']'),
+            bad_control_key,
+        ];
+        if cases.iter().any(|matched| *matched) {
+            let tree = parser.parse(&bytes, None).expect("parser returned None");
+            assert!(
+                tree.root_node().has_error(),
+                "{}: {}",
+                path.display(),
+                tree.root_node().to_sexp()
+            );
+            for (index, matched) in cases.iter().enumerate() {
+                found[index] |= *matched;
+            }
+        }
+    }
+    assert!(
+        found[0],
+        "missing first-line UnbalancedBracket brace fixture"
+    );
+    assert!(
+        found[1],
+        "missing first-line UnbalancedBracket bracket fixture"
+    );
+    assert!(found[2], "missing InvalidKey U+001C fixture");
+
+    for source in ["}", "]"] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        assert!(
+            tree.root_node().has_error(),
+            "{source:?}: {}",
+            tree.root_node().to_sexp()
+        );
+    }
+}
+
+#[test]
+fn spec_08_unbalanced_closers_after_array_items_are_errors() {
+    let mut parser = make_parser();
+    for closer in ['}', ']'] {
+        for source in [format!("x\n{closer}\n"), format!("x\n{closer}")] {
+            let tree = parser.parse(&source, None).expect("parser returned None");
+            assert!(
+                tree.root_node().has_error(),
+                "{source:?}: {}",
+                tree.root_node().to_sexp()
+            );
+        }
+    }
+
+    for source in [
+        "x\ntext with [brackets] and } braces\n",
+        "x\n\"quoted ] and } content\"\n",
+    ] {
+        let tree = parser.parse(source, None).expect("parser returned None");
+        assert!(
+            !tree.root_node().has_error(),
+            "{source:?}: {}",
+            tree.root_node().to_sexp()
+        );
+    }
+}
+
+#[test]
 fn conformance_invalid_fixtures_do_not_panic() {
     let tests_dir = spec_tests_dir();
 

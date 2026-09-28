@@ -18,8 +18,9 @@
 ## 什么是 Ktav？
 
 Ktav（希伯来语 **כְּתָב**，"书写"）是一种纯文本配置格式。形态与
-JSON 相同（标量、数组、对象、`null`、布尔值），但字符串无引号、无逗
-号，并使用点式键（`server.port: 8080`）表示嵌套。完整规范——所有官
+JSON 相同（标量、数组、对象、`null`、布尔值），但字符串不加引号；
+普通条目之间不使用逗号（内联复合结构中会使用逗号），并使用点式键
+（`server.port: 8080`）表示嵌套。完整规范——所有官
 方 Ktav 实现共同遵循的——在
 [`ktav-lang/spec`](https://github.com/ktav-lang/spec) 仓库中。
 
@@ -77,25 +78,32 @@ console.log(tree.rootNode.toString());
 
 ### Neovim（搭配 [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter)）
 
-在语法尚未上游之前，请在配置中手动注册：
+当前 `nvim-treesitter` 主分支已不再使用旧的
+`get_parser_configs()` 注册 API。请从语法仓库构建解析器库，再通过
+Neovim 的 Tree-sitter API 加载。构建此语法时，CLI 会自动包含
+`src/scanner.c`：
 
 ```lua
-require("nvim-treesitter.parsers").get_parser_configs().ktav = {
-  install_info = {
-    url = "https://github.com/ktav-lang/tree-sitter-ktav",
-    files = { "src/parser.c" },
-    branch = "main",
-  },
-  filetype = "ktav",
-}
-
+require("nvim-treesitter").setup({})
 vim.filetype.add({ extension = { ktav = "ktav" } })
+vim.treesitter.language.add("ktav", {
+  path = vim.fn.stdpath("data") .. "/site/parser/ktav.so",
+})
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "ktav",
+  callback = function() vim.treesitter.start() end,
+})
 ```
 
-随后执行 `:TSInstall ktav`。把 `queries/highlights.scm`、
-`queries/locals.scm` 与 `queries/injections.scm` 放入
-`~/.config/nvim/queries/ktav/`（或让 `nvim-treesitter` 自动从仓库
-拉取）。
+先创建目标 `parser` 目录。例如，在 Unix 上运行
+`mkdir -p ~/.local/share/nvim/site/parser`，然后在语法仓库中执行
+`npx tree-sitter build --output
+~/.local/share/nvim/site/parser/ktav.so`。此目录和 `.so` 扩展名是 Unix
+示例；请按平台使用 `stdpath("data")` 对应的路径及共享库扩展名（例如
+Windows 上的 `.dll`），并同时更新构建命令和 Lua 配置。若显式列出源文件，
+请同时包含 `src/parser.c` 和 `src/scanner.c`。将 `queries/highlights.scm`、
+`queries/locals.scm` 和 `queries/injections.scm` 复制到
+`~/.config/nvim/queries/ktav/`。
 
 ### Helix
 
@@ -107,7 +115,7 @@ name      = "ktav"
 scope     = "source.ktav"
 file-types = ["ktav"]
 roots     = []
-comment-token = "#"
+comment-token = "##"
 indent    = { tab-width = 4, unit = "    " }
 
 [[grammar]]
@@ -125,38 +133,43 @@ tree-sitter 的编辑器都可以在解析器构建后直接使用。
 
 ## 节点类型
 
-语法生成以下命名节点：
+以下是 CST（参见 `src/node-types.json`）中的代表性命名节点：
 
 | 节点                      | 捕获内容                                      |
 |---------------------------|-----------------------------------------------|
 | `source_file`             | 整个文档                                      |
-| `comment`                 | `#` 行注释                                    |
+| `comment`                 | `##` 行注释                                   |
 | `blank_line`              | 空行                                          |
 | `object_pair`             | `key SEP value` 行                            |
-| `key` / `dotted_key`      | 键部分（可包含 `.` 分隔符）                   |
-| `sep_string` / `sep_raw` / `sep_int` / `sep_float` | 四种分隔符           |
+| `key` / `dotted_key`      | 键及其点分段                                   |
+| `sep_string` / `sep_raw`  | 键值对分隔符 `:` 和 `::`                      |
 | `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字               |
-| `scalar`                  | 通用单行值正文                                |
+| `integer` / `float`       | 整数和浮点数                                   |
+| `scalar` / `raw_scalar`   | 普通及 raw 单行值                              |
 | `compound_object`         | `{` … `}` 块                                  |
 | `compound_array`          | `[` … `]` 块                                  |
-| `array_item`              | 数组中的单个元素                              |
+| `inline_object` / `inline_array` | 内联结构及其逗号分隔的条目               |
+| `inline_pair` / `inline_value` | 内联结构中的键值对和值                   |
+| `array_item` / `top_array_item` | 复合数组和顶层数组中的条目               |
 | `multiline_stripped`      | `(` … `)` 块                                  |
 | `multiline_verbatim`      | `((` … `))` 块                                |
 | `multiline_content_line`  | 多行字符串内的单行                            |
 | `empty_object` / `empty_array` / `empty_paren` / `empty_double_paren` | 内联空形式 |
-| `empty_value`             | 分隔符紧跟行尾                                |
+| `empty_value`             | 分隔符后接最长的允许空白序列，直到行尾或真正的文件末尾 |
 
-`object_pair` 暴露字段 `key`、`separator`、`value`；`array_item`
-暴露 `marker`（可选）和 `value`。
+`object_pair` 和 `inline_pair` 暴露字段 `key`、`separator`、`value`
+（`inline_pair.value` 可选）；`array_item` 与 `top_array_item` 暴露必需的
+`value` 和可选的 `marker`。
 
 ## 从源码构建
 
 ```bash
-git clone https://github.com/ktav-lang/tree-sitter-ktav.git
+git clone --recurse-submodules https://github.com/ktav-lang/tree-sitter-ktav.git
 cd tree-sitter-ktav
-npm install
-npx tree-sitter generate     # writes src/parser.c
-npx tree-sitter test         # runs the corpus
+npm ci                       # 安装 lock 文件固定的 tree-sitter-cli 0.26.8
+npx tree-sitter generate     # 重新生成 src/parser.c 等文件
+npx tree-sitter test         # 运行 tree-sitter 语料库
+cargo test                   # 运行 Rust 测试，包括规范一致性测试
 ```
 
 `src/parser.c`、`src/grammar.json`、`src/node-types.json` 与

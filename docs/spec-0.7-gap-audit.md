@@ -1,5 +1,7 @@
 # Ktav spec 0.7.0 — grammar gap audit (`tree-sitter-ktav`)
 
+> Historical audit; it records the 2026-09-16 state and is not a current conformance claim.
+
 - **Branch:** `spec-0.7-audit` · **Date:** 2026-09-16
 - **Spec pinned:** `spec/` submodule moved `c9593e8` (v0.6.0-4) → `04f867f` (**v0.7.0**, verified `git -C spec log -1` and `git -C spec describe --tags`).
 - **Grammar audited:** `grammar.js` at 444 lines (unchanged by this audit; `src/` untouched; `tree-sitter generate` not run).

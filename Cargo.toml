@@ -12,14 +12,15 @@ keywords    = ["parser", "tree-sitter", "ktav", "config", "incremental"]
 categories  = ["parser-implementations", "parsing", "text-editors"]
 build       = "bindings/rust/build.rs"
 include     = [
-    "bindings/rust/*",
-    "grammar.js",
-    "queries/*",
-    "src/*",
-    "LICENSE",
-    "LICENSE-MIT",
-    "LICENSE-APACHE",
-    "README.md",
+    "/bindings/rust/**",
+    "/grammar.js",
+    "/tree-sitter.json",
+    "/queries/**",
+    "/src/**",
+    "/LICENSE",
+    "/LICENSE-MIT",
+    "/LICENSE-APACHE",
+    "/README.md",
 ]
 
 [lib]
