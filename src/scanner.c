@@ -1,6 +1,6 @@
 // Tree-sitter external scanner for Ktav.
 //
-// Emits six tokens that the LR(1) grammar generated from grammar.js
+// Emits ten tokens that the LR(1) grammar generated from grammar.js
 // cannot express on its own:
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
@@ -51,11 +51,16 @@
 //                      the block below for why the regex it replaced
 //                      couldn't do that. Task #243.
 //
+//   _integer_eof / _float_eof — complete numeric values at true EOF.
+//                      Unlike regex prefixes, these reject trailing text.
+//   _top_scalar_eof / _comment_eof — complete root scalar/comment at EOF.
+//
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
 // zero, and serialize / deserialize are no-ops.
 
 #include "tree_sitter/parser.h"
+#include <string.h>
 
 // Order MUST match the `externals` array in grammar.js.
 enum TokenType {
@@ -65,6 +70,10 @@ enum TokenType {
     STRIPPED_CLOSE,
     VERBATIM_CLOSE,
     CONTENT_LINE,
+    INTEGER_EOF,
+    FLOAT_EOF,
+    TOP_SCALAR_EOF,
+    COMMENT_EOF,
 };
 
 void *tree_sitter_ktav_external_scanner_create(void) {
@@ -107,6 +116,80 @@ static inline bool is_ktav_ws(int32_t c) {
 // mandatory post-separator run) without ever consuming a line terminator.
 static inline bool is_h_ws(int32_t c) {
     return is_ktav_ws(c) && c != '\n' && c != '\r';
+}
+
+static int ascii_digit_value(int32_t c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+static bool scan_digit_run(TSLexer *lexer, int base) {
+    int digit = ascii_digit_value(lexer->lookahead);
+    if (digit < 0 || digit >= base) return false;
+    for (;;) {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '_') {
+            lexer->advance(lexer, false);
+            digit = ascii_digit_value(lexer->lookahead);
+            if (digit < 0 || digit >= base) return false;
+        } else {
+            digit = ascii_digit_value(lexer->lookahead);
+            if (digit < 0 || digit >= base) return true;
+        }
+    }
+}
+
+static bool scan_eof_number(TSLexer *lexer, const bool *valid_symbols) {
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
+    if (lexer->lookahead == '+' || lexer->lookahead == '-') lexer->advance(lexer, false);
+
+    if (lexer->lookahead == '0') {
+        lexer->advance(lexer, false);
+        int base = 0;
+        if (lexer->lookahead == 'x') base = 16;
+        if (lexer->lookahead == 'o') base = 8;
+        if (lexer->lookahead == 'b') base = 2;
+        if (base != 0) {
+            lexer->advance(lexer, false);
+            if (!scan_digit_run(lexer, base)) return false;
+            goto finish_integer;
+        }
+        int next = ascii_digit_value(lexer->lookahead);
+        if ((next >= 0 && next < 10) || lexer->lookahead == '_') return false;
+    } else {
+        int first = ascii_digit_value(lexer->lookahead);
+        if (first <= 0 || first >= 10 || !scan_digit_run(lexer, 10)) return false;
+    }
+
+    if (lexer->lookahead == '.') {
+        lexer->advance(lexer, false);
+        if (!scan_digit_run(lexer, 10)) return false;
+        goto exponent;
+    }
+    if (lexer->lookahead != 'e' && lexer->lookahead != 'E') goto finish_integer;
+
+exponent:
+    if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '+' || lexer->lookahead == '-') lexer->advance(lexer, false);
+        if (!scan_digit_run(lexer, 10)) return false;
+    }
+    if (!valid_symbols[FLOAT_EOF]) return false;
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, false);
+    if (!lexer->eof(lexer)) return false;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = FLOAT_EOF;
+    return true;
+
+finish_integer:
+    if (!valid_symbols[INTEGER_EOF]) return false;
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, false);
+    if (!lexer->eof(lexer)) return false;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = INTEGER_EOF;
+    return true;
 }
 
 // Consume an optional run of `is_h_ws` then a single line terminator
@@ -264,6 +347,56 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
         return true;
     }
 
+    if (valid_symbols[TOP_SCALAR_EOF] || valid_symbols[COMMENT_EOF] ||
+        valid_symbols[INTEGER_EOF] || valid_symbols[FLOAT_EOF]) {
+        while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
+        int32_t first = lexer->lookahead;
+        bool has_content = !lexer->eof(lexer);
+
+        if (first == '#' && valid_symbols[COMMENT_EOF]) {
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == '#') {
+                lexer->advance(lexer, false);
+                while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+                    lexer->advance(lexer, false);
+                }
+                if (lexer->eof(lexer)) {
+                    lexer->mark_end(lexer);
+                    lexer->result_symbol = COMMENT_EOF;
+                    return true;
+                }
+            }
+        }
+
+        if ((valid_symbols[INTEGER_EOF] || valid_symbols[FLOAT_EOF]) &&
+            scan_eof_number(lexer, valid_symbols)) return true;
+
+        if (valid_symbols[TOP_SCALAR_EOF] && first != ':' && first != '{' &&
+            first != '[' && first != '(' && first != '\r' && first != '\n' &&
+            has_content) {
+            char prefix[6] = {0};
+            unsigned length = 0;
+            unsigned last_content = 0;
+            while (!lexer->eof(lexer)) {
+                int32_t c = lexer->lookahead;
+                if (c == ':' || c == '\r' || c == '\n') return false;
+                if (length < 6) {
+                    prefix[length] = c < 128 ? (char)c : 0;
+                    length++;
+                }
+                if (!is_h_ws(c)) last_content = length;
+                lexer->advance(lexer, false);
+            }
+            if ((last_content == 4 &&
+                 (!memcmp(prefix, "true", 4) || !memcmp(prefix, "null", 4))) ||
+                (last_content == 5 && !memcmp(prefix, "false", 5))) return false;
+            lexer->mark_end(lexer);
+            lexer->result_symbol = TOP_SCALAR_EOF;
+            return true;
+        }
+        return false;
+    }
+
     // _strict_eol — consume optional horizontal whitespace, then the
     // line terminator (LF, CRLF, or EOF). If a non-whitespace byte
     // appears before the line terminator, fail.
@@ -275,17 +408,8 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
         return false;
     }
 
-    // _eol — the line end for scalars, keywords and inline compounds.
-    // Behaviourally identical to _strict_eol; kept as a separate token so
-    // that the closer-strictness rule (§ 5.6.1) and ordinary end-of-value
-    // stay distinguishable in the grammar and in the parse tables.
-    //
-    // It exists because the grammar's `_newline` regex (/\r\n|\r|\n/) has
-    // no EOF alternative, so a bare scalar as the final value of a file
-    // with no trailing newline produced a MISSING `_newline` node AND lost
-    // its type (`scalar` instead of `integer`). The core accepts those
-    // documents, and an editor buffer very often has no final newline —
-    // see tests/eof_and_nul.rs.
+    // _eol terminates scalars, keywords and inline compounds; numbers at
+    // true EOF use their dedicated tokens above.
     if (valid_symbols[EOL]) {
         if (consume_line_terminator(lexer)) {
             lexer->result_symbol = EOL;

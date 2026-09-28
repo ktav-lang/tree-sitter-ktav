@@ -1,17 +1,6 @@
-//! Two things the conformance corpus cannot see, because every fixture in
-//! it ends with a newline and none of them embeds a NUL in the middle.
-//!
-//! On byte 0: tree-sitter reports `lookahead == 0` for BOTH a real
-//! end-of-input and an embedded NUL; only `lexer->eof(lexer)` tells them
-//! apart, and `src/scanner.c` does not call it — it tests `c == 0`. That
-//! conflation is REAL IN THE CODE but, measured, it does not break the
-//! compound closers (see the two passing tests below); it breaks the
-//! grammar-level `multiline_content_line` regex instead, which is the
-//! open question in task #243.
-//!
-//! On end-of-input: a bare scalar as the final value with NO trailing
-//! newline yields a MISSING `_newline` and loses its type. Measured, not
-//! inferred — see `bare_scalar_without_trailing_newline` below.
+//! Embedded NUL and true EOF both report `lookahead == 0`; the scanner
+//! must use `lexer->eof()` to distinguish them. Values without a final
+//! newline must keep the same node types as newline-terminated values.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -93,12 +82,8 @@ fn compounds_terminate_correctly_at_a_real_eof() {
 /// error. Editors routinely hold buffers with no final newline, so this
 /// is the common case, not a corner one.
 ///
-/// Fixed under #243 for object_pair, keyword and the inline compounds by
-/// giving those positions the external `_eol` token (a line terminator OR
-/// a true EOF, via `lexer->eof()`) instead of the `_newline` regex, which
-/// had no EOF alternative. `integer`/`float` are the one kind NOT fixed
-/// here — see `bare_number_without_trailing_newline_keeps_its_old_type`
-/// below for why.
+/// Fixed under #243 for object_pair, keyword and inline compounds with
+/// `_eol`; numeric values additionally require complete EOF scanner tokens.
 #[test]
 fn no_spurious_error_at_eof_regardless_of_value_kind() {
     for src in [
@@ -136,33 +121,94 @@ fn keyword_keeps_its_specific_type_at_eof() {
     }
 }
 
-/// The one sub-case #243 leaves open. `integer`/`float` are whole-line
-/// regex tokens BY DESIGN (see the comment above their definitions in
-/// grammar.js): the mandatory trailing terminator is what stops the float
-/// pattern from matching just the "1.2" prefix of "1.2.3" and leaving
-/// ".3" as an orphaned token. Making the terminator optional (tried,
-/// reverted) fixes EOF but reopens exactly that ambiguity — confirmed by
-/// snapshotting all 442 spec fixtures before/after and diffing: several
-/// `valid/` fixtures like dotted-key expansions (`a.b: 1` → nested
-/// `{a:{b:1}}`, canonical form has adjacent numbers on their own lines
-/// with no separator between them) started parsing with ERROR nodes.
-/// A real fix needs the number literal itself behind an external token
-/// that can call `lexer->eof()`, which is a much larger change than the
-/// `_eol` swap above — the same kind of cost the NUL-fixture gap has.
 #[test]
-#[ignore = "known gap — task #243; integer/float are whole-line tokens \
-            whose terminator can't be made EOF-optional without breaking \
-            number/non-number disambiguation (verified via full-corpus \
-            snapshot diff)"]
 fn bare_number_without_trailing_newline_keeps_its_specific_type() {
-    for (src, expected_type) in [(&b"plain: 1"[..], "integer"), (&b"f: 1.5"[..], "float")] {
+    for (src, expected_type) in [
+        (&b"plain: 1"[..], "integer"),
+        (&b"hex: 0x1A"[..], "integer"),
+        (&b"plus: +7"[..], "integer"),
+        (&b"f: 1.5"[..], "float"),
+        (&b"exp: 1e03"[..], "float"),
+        (&b"zero_exp: 0e3"[..], "float"),
+        (&b"leading_zero: 01.5"[..], "scalar"),
+        (&b"leading_zero_int: 0_7"[..], "scalar"),
+        (&b"not_float: 1.2.3"[..], "scalar"),
+    ] {
         let tree = parse(src);
+        assert!(
+            !tree.root_node().has_error(),
+            "{:?}: {}",
+            src,
+            tree.root_node().to_sexp()
+        );
         assert!(
             tree.root_node().to_sexp().contains(expected_type),
             "{:?}: expected a {} node, got {}",
             String::from_utf8_lossy(src),
             expected_type,
             tree.root_node().to_sexp()
+        );
+    }
+}
+
+#[test]
+fn eof_and_newline_values_have_the_same_tree() {
+    for body in [
+        "0", "-0", "+7", "0x1A", "0o755", "0b101", "1_000", "1.5", "0e3", "1e+03", "1e-10",
+        "1_000.5", "01234", "0_7", "01.5", "1.2.3", "1e", "1e+", "0x", "0x_1", "1__2", "1_", "_1",
+        "1a", "true", "hello",
+    ] {
+        let terminated = parse(format!("value: {body}\n").as_bytes());
+        let eof = parse(format!("value: {body}").as_bytes());
+        assert_eq!(
+            eof.root_node().to_sexp(),
+            terminated.root_node().to_sexp(),
+            "different EOF tree for {body}"
+        );
+    }
+}
+
+#[test]
+fn numeric_edge_whitespace_matches_the_spec_set() {
+    for ws in [
+        '\t', '\u{000B}', '\u{000C}', ' ', '\u{0085}', '\u{00A0}', '\u{1680}', '\u{2000}',
+        '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}', '\u{2006}', '\u{2007}',
+        '\u{2008}', '\u{2009}', '\u{200A}', '\u{2028}', '\u{2029}', '\u{202F}', '\u{205F}',
+        '\u{3000}',
+    ] {
+        for terminator in ["", "\n"] {
+            let source = format!("value: 1{ws}{terminator}");
+            let tree = parse(source.as_bytes());
+            let sexp = tree.root_node().to_sexp();
+            assert!(!tree.root_node().has_error(), "U+{:04X}: {sexp}", ws as u32);
+            assert!(sexp.contains("(integer"), "U+{:04X}: {sexp}", ws as u32);
+        }
+    }
+}
+
+#[test]
+fn root_items_and_comments_keep_their_tree_at_eof() {
+    for source in [
+        "plain",
+        "1",
+        "1.5",
+        "true",
+        ":: raw",
+        "[a, b]",
+        "## comment",
+        "a: 1\n## comment",
+    ] {
+        let with_newline = parse(format!("{source}\n").as_bytes());
+        assert!(
+            !with_newline.root_node().has_error(),
+            "newline form of {source:?}: {}",
+            with_newline.root_node().to_sexp()
+        );
+        let at_eof = parse(source.as_bytes());
+        assert_eq!(
+            at_eof.root_node().to_sexp(),
+            with_newline.root_node().to_sexp(),
+            "EOF form of {source:?}"
         );
     }
 }

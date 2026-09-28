@@ -9,9 +9,10 @@
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
 - Embedded NUL bytes in multi-line string content are treated as content,
   not EOF; the external scanner now consumes the whole content line.
-- Bare scalar values, keywords and inline compounds at true EOF no longer
-  need a trailing newline or produce a missing-newline error. Integer/float
-  node typing at EOF remains a separate limitation.
+- Values at true EOF no longer need a trailing newline or produce a
+  missing-newline error. Integers and floats keep their numeric node types.
+- EOF number tokens must consume the full value, so `1.2.3` remains a
+  string instead of being split after the `1.2` prefix.
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
@@ -33,10 +34,11 @@
   грамматики (§ 4, § 5.8.5), вместо провала на общий путь скаляра.
 - Встроенный NUL-байт в содержимом многострочной строки считается частью
   содержимого, а не EOF; внешний сканер теперь читает всю строку.
-- Голые скалярные значения, ключевые слова и встроенные составные значения
-  в конце файла больше не требуют завершающего перевода строки и не создают
-  отсутствующий узел перевода строки. Типизация узлов integer/float на EOF
-  остаётся отдельным ограничением.
+- Значения в конце файла больше не требуют завершающего перевода строки
+  и не создают отсутствующий узел перевода строки. Числа сохраняют
+  узлы integer/float даже на EOF.
+- Числовой токен на EOF должен охватить всё значение: `1.2.3` остаётся
+  строкой, а не разделяется после префикса `1.2`.
 - Десятичные формы с избыточным ведущим нулём, например `01234` и `01.5`,
   становятся узлами скаляра, а не integer/float; `0`, `0.5` и числа с
   префиксом основания сохраняют числовые узлы (§ 5.2).
@@ -58,8 +60,10 @@
   （§ 4、§ 5.8.5），而不再落入通用标量路径。
 - 多行字符串内容中的嵌入 NUL 字节现在视为内容而非 EOF；外部扫描器
   会继续读取完整内容行。
-- 文件末尾的裸标量值、关键字和内联复合值不再要求末尾换行，也不会
-  产生缺失换行节点。EOF 处 integer/float 节点类型仍有独立限制。
+- 文件末尾的值不再要求末尾换行，也不会产生缺失换行节点；
+  整数和浮点数在 EOF 处仍保留各自的数值节点类型。
+- EOF 数值词元必须覆盖整个值，因此 `1.2.3` 仍是字符串，
+  不会在 `1.2` 前缀后被拆开。
 - `01234`、`01.5` 等带冗余前导零的十进制形式归为标量节点，
   不再归为 integer/float；`0`、`0.5` 和带进制前缀的整数仍保留
   数值节点（§ 5.2）。

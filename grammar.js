@@ -88,6 +88,10 @@ module.exports = grammar({
     $._stripped_close,   // `)[ \t]*\r?\n` (or EOF) — only valid inside `(...)` body
     $._verbatim_close,   // `))[ \t]*\r?\n` (or EOF) — only valid inside `((...))` body
     $._content_line,     // `[^\r\n]*\r?\n` — a multi-line-string body line (NUL is content)
+    $._integer_eof,      // complete integer at true EOF, without a newline
+    $._float_eof,        // complete float at true EOF, without a newline
+    $._top_scalar_eof,   // complete root scalar at true EOF
+    $._comment_eof,      // final comment without a newline
   ],
 
   conflicts: $ => [],
@@ -137,7 +141,10 @@ module.exports = grammar({
     // `#` is ordinary content. The token captures the whole line
     // including the trailing newline to beat `_top_scalar_text` at the
     // lexer's longest-match step.
-    comment: $ => token(prec(1, /##[^\r\n]*(\r\n|\r|\n)/)),
+    comment: $ => choice(
+      token(prec(1, /##[^\r\n]*(\r\n|\r|\n)/)),
+      $._comment_eof,
+    ),
 
     // ---- Object pair ----
     //
@@ -544,7 +551,7 @@ module.exports = grammar({
 
     // `top_scalar` — bare-scalar at the document root. Forbids `:` so
     // that pair-shaped lines always parse as `object_pair`.
-    top_scalar: $ => $._top_scalar_text,
+    top_scalar: $ => choice($._top_scalar_text, $._top_scalar_eof),
     _top_scalar_text: $ => token(/[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000:\{\[\(\r\n][^:\r\n]*(\r\n|\r|\n)/),
 
     // ---- Multi-line strings ----
@@ -623,14 +630,16 @@ module.exports = grammar({
     // prefix. Float is given prec(3) so it beats integer on `1.5\n`.
     //
     // In 0.8, redundant-leading-zero decimals are strings (§ 5.2).
-    integer: $ => token(prec(2,
-      /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|0|[1-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
-    )),
+    integer: $ => choice(
+      token(prec(2, /[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|0|[1-9]([_]?[0-9])*)[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
+      $._integer_eof,
+    ),
 
     // Only the float's integer part is subject to the 0.8 zero rule.
-    float: $ => token(prec(3,
-      /([+-]?(0|[1-9]([_]?[0-9])*)\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?(0|[1-9]([_]?[0-9])*)[eE][+-]?[0-9]([_]?[0-9])*)[ \t]*(\r\n|\r|\n)/
-    )),
+    float: $ => choice(
+      token(prec(3, /([+-]?(0|[1-9]([_]?[0-9])*)\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?(0|[1-9]([_]?[0-9])*)[eE][+-]?[0-9]([_]?[0-9])*)[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
+      $._float_eof,
+    ),
 
     // ---- Keywords ----
     keyword: $ => seq(

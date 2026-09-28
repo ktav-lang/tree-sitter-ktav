@@ -57,15 +57,24 @@
       "value": "\\r\\n|\\r|\\n"
     },
     "comment": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "##[^\\r\\n]*(\\r\\n|\\r|\\n)"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "PATTERN",
+              "value": "##[^\\r\\n]*(\\r\\n|\\r|\\n)"
+            }
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_comment_eof"
         }
-      }
+      ]
     },
     "object_pair": {
       "type": "CHOICE",
@@ -1369,8 +1378,17 @@
       ]
     },
     "top_scalar": {
-      "type": "SYMBOL",
-      "name": "_top_scalar_text"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_top_scalar_text"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_top_scalar_eof"
+        }
+      ]
     },
     "_top_scalar_text": {
       "type": "TOKEN",
@@ -1467,26 +1485,44 @@
       ]
     },
     "integer": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|0|[1-9]([_]?[0-9])*)[ \\t]*(\\r\\n|\\r|\\n)"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 2,
+            "content": {
+              "type": "PATTERN",
+              "value": "[+-]?(0x[0-9a-fA-F]([_]?[0-9a-fA-F])*|0o[0-7]([_]?[0-7])*|0b[01]([_]?[01])*|0|[1-9]([_]?[0-9])*)[ \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]*(\\r\\n|\\r|\\n)"
+            }
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_integer_eof"
         }
-      }
+      ]
     },
     "float": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 3,
-        "content": {
-          "type": "PATTERN",
-          "value": "([+-]?(0|[1-9]([_]?[0-9])*)\\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?(0|[1-9]([_]?[0-9])*)[eE][+-]?[0-9]([_]?[0-9])*)[ \\t]*(\\r\\n|\\r|\\n)"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 3,
+            "content": {
+              "type": "PATTERN",
+              "value": "([+-]?(0|[1-9]([_]?[0-9])*)\\.[0-9]([_]?[0-9])*([eE][+-]?[0-9]([_]?[0-9])*)?|[+-]?(0|[1-9]([_]?[0-9])*)[eE][+-]?[0-9]([_]?[0-9])*)[ \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]*(\\r\\n|\\r|\\n)"
+            }
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_float_eof"
         }
-      }
+      ]
     },
     "keyword": {
       "type": "SEQ",
@@ -1580,6 +1616,22 @@
     {
       "type": "SYMBOL",
       "name": "_content_line"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_integer_eof"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_float_eof"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_top_scalar_eof"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_comment_eof"
     }
   ],
   "inline": [],

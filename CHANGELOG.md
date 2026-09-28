@@ -41,9 +41,10 @@ the specification (0.7.x was never tagged for this package).
   (§ 4, § 5.8.5) instead of falling through the generic scalar path.
 - Embedded NUL bytes in multi-line string content are treated as content,
   not EOF; the external scanner now consumes the whole content line.
-- Bare scalar values, keywords and inline compounds at true EOF no longer
-  need a trailing newline or produce a missing-newline error. Integer/float
-  node typing at EOF remains a separate limitation.
+- Values at true EOF no longer need a trailing newline or produce a
+  missing-newline error. Integers and floats keep their numeric node types.
+- EOF number tokens must consume the full value, so `1.2.3` remains a
+  string instead of being split after the `1.2` prefix.
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
