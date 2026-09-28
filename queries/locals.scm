@@ -7,6 +7,11 @@
 
 (source_file) @local.scope
 (compound_object) @local.scope
+(inline_object) @local.scope
+(nested_inline_object) @local.scope
 
 (object_pair
+  key: (key) @local.definition.property)
+
+(inline_pair
   key: (key) @local.definition.property)

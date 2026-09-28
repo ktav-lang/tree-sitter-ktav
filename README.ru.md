@@ -183,7 +183,7 @@ cargo test                   # тесты Rust, включая проверку 
 
 ## Статус
 
-`0.8.0` — реализует [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+`0.8.0` — Tree-sitter-грамматика синтаксиса [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
 Грамматика разбирает все закреплённые валидные фикстуры spec 0.8 без
 ошибок и сверяет корневой Object/Array с JSON-оракулом. Tree-sitter
 строит синтаксическое дерево для редакторов и не заменяет

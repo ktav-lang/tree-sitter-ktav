@@ -31,6 +31,13 @@ the specification (0.7.x was never tagged for this package).
 
 ### Fixed
 
+- Grammar openers recognize all 23 inline whitespace code points
+  (§ 3.3), not only ASCII whitespace.
+- Highlight queries capture raw top-level and inline scalar values;
+  locals queries define scopes and keys for inline objects.
+- Inline object and array highlights capture only the anonymous brace
+  and bracket delimiter tokens, leaving their contents to their own captures.
+
 - The spaced-key positional rule applies per segment, not per word
   (§ 5.3.3).
 - The full 25-code-point whitespace set (§ 3.3) is recognised and
@@ -56,6 +63,8 @@ the specification (0.7.x was never tagged for this package).
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
   valid-fixture allow-list and checks root kinds against JSON oracles.
+- Corpus guard validates manifest, version, and oracle schemas, and
+  safely validates raw-byte fixture stems.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
   prefers OIDC and can fall back to a registry token.
 

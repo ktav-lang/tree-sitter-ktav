@@ -178,7 +178,7 @@ CLI 即可构建。
 
 ## 状态
 
-`0.8.0` — 实现 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md)。
+`0.8.0` — 面向 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md) 语法的 Tree-sitter 语法包。
 语法可无错误地解析所有固定的 spec 0.8 有效样例，并将每个根
 Object/Array 与 JSON 预期结果核对。Tree-sitter 为编辑器构建
 语法树，不代替参考 Rust 解析器的语义校验。

@@ -24,6 +24,8 @@
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
   valid-fixture allow-list and checks root kinds against JSON oracles.
+- Corpus guard validates manifest, version, and oracle schemas, and
+  safely validates raw-byte fixture stems.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
   prefers OIDC and can fall back to a registry token.
 
@@ -55,35 +57,16 @@
 
 - Conformance-набор обходит корпус спецификации **0.8.0** (ранее 0.6)
   без исключений valid-фикстур и сверяет вид корня с JSON-оракулами.
+- Защитная проверка корпуса контролирует схемы manifest, версии и
+  oracle, а также безопасно проверяет имена raw-byte фикстур.
 - CI: `cargo publish` использует Trusted Publishing (OIDC);
   `npm publish` предпочитает OIDC, но может использовать токен реестра.
 
 >>>>> lang=zh
-- 带空格键的位置规则按段应用，而非按词
-  （§ 5.3.3）。
-- 完整的 25 个码位空白字符集（§ 3.3）会被识别，
-  并在词元边缘裁去，而非此前较窄的纯 ASCII 集。
-- 单独的 CR 现在被接受为合法的行终止符（§ 3.2）。
-- 原始 `#` 现在允许作为普通键字符（§ 3.4、§ 4）。
-- 首个内容行决定根类型（§ 5.0.1）：Array 中形似键值对的行仍是
-  字符串，已闭合的内联根之后不能再有内容。紧贴的 `:` 或未闭合的
-  起始引号可使根类型成为 Array。
-- `::` 之后的内联 raw 标量现在有专用的语法规则
-  （§ 4、§ 5.8.5），而不再落入通用标量路径。
-- 多行字符串内容中的嵌入 NUL 字节现在视为内容而非 EOF；外部扫描器
-  会继续读取完整内容行。
-- 文件末尾的值不再要求末尾换行，也不会产生缺失换行节点；
-  整数和浮点数在 EOF 处仍保留各自的数值节点类型。
-- EOF 数值词元必须覆盖整个值，因此 `1.2.3` 仍是字符串，
-  不会在 `1.2` 前缀后被拆开。
-- `01234`、`01.5` 等带冗余前导零的十进制形式归为标量节点，
-  不再归为 integer/float；`0`、`0.5` 和带进制前缀的整数仍保留
-  数值节点（§ 5.2）。
-
-### 变更
-
 - 一致性套件现在遍历规范 **0.8.0** 语料（此前为 0.6），不再豁免
   有效样例，并根据 JSON 预期结果检查根类型。
+- 语料保护检查 manifest、版本和 oracle 的结构，并安全校验
+  raw-byte fixture 的文件名。
 - CI：`cargo publish` 使用 Trusted Publishing（OIDC）；
   `npm publish` 优先使用 OIDC，也可回退到 registry 令牌。
 

@@ -29,14 +29,32 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 fn spec_tests_dir() -> PathBuf {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("spec/versions/0.8/tests");
+    let spec = fs::read_to_string(root.join("../spec.md")).expect("pinned spec document missing");
+    assert!(
+        spec.lines().any(|line| line.trim() == "**Version:** 0.8.0"),
+        "spec/versions/0.8 is not the Ktav 0.8.0 specification"
+    );
     let manifest =
         fs::read(root.join("manifest.json")).expect("pinned spec corpus manifest missing");
     let manifest: serde_json::Value =
         serde_json::from_slice(&manifest).expect("invalid corpus manifest JSON");
+    let manifest_object = manifest
+        .as_object()
+        .expect("corpus manifest must be an object");
+    assert_eq!(
+        manifest_object
+            .keys()
+            .map(String::as_str)
+            .collect::<HashSet<_>>(),
+        ["$comment", "schema_version", "categories", "fixture_flags"]
+            .into_iter()
+            .collect(),
+        "corpus manifest schema changed"
+    );
     assert_eq!(
         manifest["schema_version"].as_u64(),
         Some(1),
@@ -57,6 +75,14 @@ fn spec_tests_dir() -> PathBuf {
         categories.len(),
         expected.len(),
         "unknown or missing manifest category"
+    );
+    assert_eq!(
+        categories
+            .keys()
+            .map(String::as_str)
+            .collect::<HashSet<_>>(),
+        expected.iter().map(|(name, _)| *name).collect(),
+        "manifest category names changed"
     );
     let actual_dirs: HashSet<String> = fs::read_dir(&root)
         .expect("corpus directory missing")
@@ -92,6 +118,14 @@ fn spec_tests_dir() -> PathBuf {
         .expect("fixture_flags missing");
     let mut raw_inputs = HashSet::new();
     for entry in flags {
+        let entry = entry.as_object().expect("fixture flag must be an object");
+        assert_eq!(
+            entry.keys().map(String::as_str).collect::<HashSet<_>>(),
+            ["category", "fixture", "flags", "note"]
+                .into_iter()
+                .collect(),
+            "fixture flag schema changed"
+        );
         let category = entry["category"].as_str().expect("flag category missing");
         let fixture = entry["fixture"].as_str().expect("flag fixture missing");
         let names = entry["flags"].as_array().expect("fixture flags missing");
@@ -101,10 +135,23 @@ fn spec_tests_dir() -> PathBuf {
         );
         assert_eq!(names.len(), 1, "unknown or duplicate fixture flags");
         assert_eq!(names[0].as_str(), Some("raw_bytes"), "unknown fixture flag");
+        let fixture_path = Path::new(fixture);
         assert!(fixture
             .split('/')
             .all(|part| !part.is_empty() && part != "." && part != ".."));
-        let input = root.join(category).join(fixture).with_extension("ktav");
+        assert!(
+            fixture_path
+                .components()
+                .all(|part| matches!(part, Component::Normal(_)))
+                && !fixture.contains('\\')
+                && !fixture.contains(':')
+                && !fixture.ends_with(".ktav"),
+            "fixture flag path is not a safe fixture stem: {fixture:?}"
+        );
+        let input = root
+            .join(category)
+            .join(fixture_path)
+            .with_extension("ktav");
         assert!(
             raw_inputs.insert(input.clone()),
             "duplicate fixture flag entry"
@@ -117,6 +164,17 @@ fn spec_tests_dir() -> PathBuf {
     }
 
     for (category, count) in expected {
+        let category_entry = categories[category]
+            .as_object()
+            .expect("manifest category entry must be an object");
+        assert_eq!(
+            category_entry
+                .keys()
+                .map(String::as_str)
+                .collect::<HashSet<_>>(),
+            ["count"].into_iter().collect(),
+            "manifest category schema changed: {category}"
+        );
         assert_eq!(
             categories[category]["count"].as_u64(),
             Some(count),
@@ -157,7 +215,9 @@ fn spec_tests_dir() -> PathBuf {
         );
         for path in actual_files {
             let bytes = fs::read(&path).expect("read fixture");
-            if raw_inputs.contains(&path) {
+            if path.extension().and_then(|ext| ext.to_str()) == Some("json") {
+                validate_oracle(category, &path, &bytes);
+            } else if raw_inputs.contains(&path) {
                 assert!(
                     std::str::from_utf8(&bytes).is_err(),
                     "raw_bytes fixture is valid UTF-8"
@@ -169,6 +229,70 @@ fn spec_tests_dir() -> PathBuf {
         }
     }
     root
+}
+
+fn validate_oracle(category: &str, path: &Path, bytes: &[u8]) {
+    let oracle: serde_json::Value = serde_json::from_slice(bytes)
+        .unwrap_or_else(|error| panic!("invalid JSON oracle {}: {error}", path.display()));
+    if category == "valid" {
+        assert!(
+            oracle.is_object() || oracle.is_array(),
+            "{} valid oracle must be a JSON Object or Array",
+            path.display()
+        );
+        return;
+    }
+    let object = oracle
+        .as_object()
+        .unwrap_or_else(|| panic!("{} oracle must be a JSON object", path.display()));
+    let require_string = |field: &str| {
+        let value = object.get(field).and_then(serde_json::Value::as_str);
+        assert!(
+            matches!(value, Some(value) if !value.is_empty()),
+            "{} oracle must contain string field {field:?}",
+            path.display()
+        );
+    };
+    let require_field = |field: &str| {
+        object
+            .get(field)
+            .unwrap_or_else(|| panic!("{} oracle missing field {field:?}", path.display()))
+    };
+    let require_document_root = |field: &str| {
+        let value = require_field(field);
+        assert!(
+            value.is_object() || value.is_array(),
+            "{} oracle field {field:?} must be an Object or Array root",
+            path.display()
+        );
+    };
+
+    match category {
+        "invalid" => require_string("expected_error"),
+        "unrepresentable" => {
+            require_field("value");
+            require_string("unrepresentable_reason");
+        }
+        "parseable-unrepresentable" => {
+            require_document_root("value");
+            require_string("unrepresentable_reason");
+        }
+        "strict-lossy" => {
+            require_document_root("lax_value");
+            require_string("expected_error");
+            require_string("body");
+            require_string("canonical");
+            assert_eq!(
+                object
+                    .get("expected_error")
+                    .and_then(serde_json::Value::as_str),
+                Some("LossyScalar"),
+                "{} strict-lossy oracle has an unexpected error code",
+                path.display()
+            );
+        }
+        _ => panic!("unknown oracle category {category}"),
+    }
 }
 
 fn collect_files(root: &Path) -> Vec<PathBuf> {

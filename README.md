@@ -183,7 +183,7 @@ so consumers do not need the CLI to build.
 
 ## Status
 
-`0.8.0` — implements [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+`0.8.0` — Tree-sitter grammar targeting the syntax in [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
 The grammar parses every pinned spec 0.8 valid fixture without error and
 checks each Object/Array root against its JSON oracle. Tree-sitter supplies
 editor syntax trees; it does not perform the semantic validation of the

@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 const Parser = require("tree-sitter");
 
@@ -27,7 +29,54 @@ test("0.8 leading-zero values use string nodes", () => {
   );
 });
 
-test("numeric edge whitespace follows the 0.7 spec", () => {
+test("editor queries cover raw values and inline object scopes", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  const tree = parser.parse("raw:: value\nmeta: {pattern:: literal, nested: {id: 0123}}\nlist: [one, [two]]\nzero: 0123\ncount: 1234\n");
+  assert.equal(tree.rootNode.hasError, false);
+
+  const queriesDir = path.resolve(__dirname, "../../queries");
+  const highlights = new Parser.Query(
+    grammar,
+    fs.readFileSync(path.join(queriesDir, "highlights.scm"), "utf8"),
+  );
+  const highlightCaptures = highlights.captures(tree.rootNode);
+  assert.equal(
+    highlightCaptures.filter(({ name, node }) => name === "string.special" && node.type === "raw_scalar").length,
+    1,
+  );
+  assert.ok(highlightCaptures.some(({ name, node }) =>
+    name === "string.special" && node.type === "inline_raw_scalar" && node.text === "literal"));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "string" && node.type === "scalar" && node.text === "0123\n"));
+  assert.ok(highlightCaptures.some(({ name, node }) => name === "number" && node.type === "integer" && node.text === "1234\n"));
+
+  const inlineBracketCaptures = highlightCaptures.filter(({ name, node }) =>
+    name === "punctuation.bracket" && ["{", "}", "[", "]"].includes(node.type));
+  assert.deepEqual(
+    inlineBracketCaptures.map(({ node }) => node.text).sort(),
+    ["[", "[", "]", "]", "{", "{", "}", "}"],
+  );
+  assert.ok(!highlightCaptures.some(({ name, node }) =>
+    name === "punctuation.bracket" && ["inline_object", "inline_array"].includes(node.type)));
+
+  const locals = new Parser.Query(
+    grammar,
+    fs.readFileSync(path.join(queriesDir, "locals.scm"), "utf8"),
+  );
+  const localCaptures = locals.captures(tree.rootNode);
+  assert.ok(localCaptures.some(({ name, node }) =>
+    name === "local.scope" && node.type === "inline_object" && node.text.includes("pattern:: literal")));
+  assert.ok(localCaptures.some(({ name, node }) =>
+    name === "local.scope" && node.type === "nested_inline_object" && node.text.includes("id: 0123")));
+  const inlineDefinitions = localCaptures
+    .filter(({ name }) => name === "local.definition.property")
+    .map(({ node }) => node.text);
+  assert.ok(inlineDefinitions.includes("pattern"));
+  assert.ok(inlineDefinitions.includes("nested"));
+  assert.ok(inlineDefinitions.includes("id"));
+});
+
+test("numeric edge whitespace follows the 0.8 spec whitespace set", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);
   const tree = parser.parse("vt: 1\u000b\nideographic: 1\u3000");

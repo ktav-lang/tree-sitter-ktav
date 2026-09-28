@@ -45,7 +45,8 @@
  *     therefore fails to parse.
  *   - The closer-on-its-own-line rule for compounds and multi-line
  *     strings is enforced via the external scanner's `_strict_eol`
- *     token, which only matches `[ \t]*\r?\n` (or EOF) — any non-
+ *     token, which matches horizontal whitespace followed by a line end
+ *     (or EOF) — any non-
  *     whitespace text between the closer and the line terminator is
  *     a parse error.
  *   - Multi-line string content is captured as a sequence of opaque
@@ -83,7 +84,7 @@ module.exports = grammar({
 
   externals: $ => [
     $._marker_ws,        // zero-width assertion after pair separators
-    $._strict_eol,       // [ \t]*\r?\n  (or EOF) — for compound closers
+    $._strict_eol,       // horizontal whitespace + line end (or EOF)
     $._eol,              // \r?\n (or EOF) — line end for scalars/keywords/inlines
     $._stripped_close,   // `)[ \t]*\r?\n` (or EOF) — only valid inside `(...)` body
     $._verbatim_close,   // `))[ \t]*\r?\n` (or EOF) — only valid inside `((...))` body
@@ -371,12 +372,12 @@ module.exports = grammar({
     empty_double_paren: $ => seq(token(prec(5, '(())')), $._eol),
 
     // ---- Multi-line compounds ----
-    open_brace:    $ => token(prec(4, /\{[ \t]*(\r\n|\r|\n)/)),
+    open_brace:    $ => token(prec(4, /\{[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
     close_brace:   $ => seq(token(prec(4, '}')),    $._strict_eol),
-    open_bracket:  $ => token(prec(4, /\[[ \t]*(\r\n|\r|\n)/)),
+    open_bracket:  $ => token(prec(4, /\[[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
     close_bracket: $ => seq(token(prec(4, ']')),    $._strict_eol),
-    open_paren:    $ => token(prec(4, /\([ \t]*(\r\n|\r|\n)/)),
-    open_dparen:   $ => token(prec(5, /\(\([ \t]*(\r\n|\r|\n)/)),
+    open_paren:    $ => token(prec(4, /\([ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
+    open_dparen:   $ => token(prec(5, /\(\([ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)),
     close_paren:   $ => $._stripped_close,
     close_dparen:  $ => $._verbatim_close,
 
