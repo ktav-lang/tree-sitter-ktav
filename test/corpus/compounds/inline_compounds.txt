@@ -15,12 +15,12 @@ empty: {}
         key: (key)
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar)))
+          (integer)))
       (inline_pair
         key: (key)
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar)))))
+          (integer)))))
   (object_pair
     key: (key)
     separator: (sep_string)
@@ -63,11 +63,11 @@ nums: [1, 2, 3,]
     separator: (sep_string)
     value: (inline_array
       (inline_value
-        (inline_scalar))
+        (integer))
       (inline_value
-        (inline_scalar))
+        (integer))
       (inline_value
-        (inline_scalar)))))
+        (integer)))))
 
 ==================
 Inline object with raw separator
@@ -108,12 +108,12 @@ k: {"a,b": 1, c: 2}
           (quoted_key_segment))
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar)))
+          (integer)))
       (inline_pair
         key: (key)
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar))))))
+          (integer))))))
 
 ==================
 Quoted inline key: `}` inside it does not close the inline object (spec 0.7.0 § 5.3.3)
@@ -132,12 +132,13 @@ k: {"a}b": 1, c: 2}
           (quoted_key_segment))
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar)))
+          (integer)))
       (inline_pair
         key: (key)
         separator: (sep_string)
         value: (inline_value
-          (inline_scalar))))))
+          (integer))))))
+
 ==================
 NBSP (U+00A0) between inline pair separator and nested array is § 3.3 whitespace (spec 0.7.0 § 3.3/§ 4 <sep-end>, § 5.8.1)
 ==================
@@ -154,7 +155,7 @@ NBSP (U+00A0) between inline pair separator and nested array is § 3.3 whitespac
         value: (inline_value
           (nested_inline_array
             (inline_value
-              (inline_scalar))))))))
+              (integer))))))))
 
 ==================
 NBSP (U+00A0) between inline array opener and nested object is § 3.3 whitespace (spec 0.7.0 § 3.3/§ 4, § 5.8.1)
@@ -172,4 +173,140 @@ NBSP (U+00A0) between inline array opener and nested object is § 3.3 whitespace
             key: (key)
             separator: (sep_string)
             value: (inline_value
-              (inline_scalar))))))))
+              (integer))))))))
+
+==================
+Inline values are typed like whole-line values: numbers and keywords (spec 0.8.0 § 5.2, § 5.8)
+==================
+a: [1, -2, 0x1A, 1_000, 0.5, 1e3, true, null, false, x]
+
+---
+
+(source_file
+  (object_pair
+    (key)
+    (sep_string)
+    (inline_array
+      (inline_value
+        (integer))
+      (inline_value
+        (integer))
+      (inline_value
+        (integer))
+      (inline_value
+        (integer))
+      (inline_value
+        (float))
+      (inline_value
+        (float))
+      (inline_value
+        (keyword
+          (kw_true)))
+      (inline_value
+        (keyword
+          (kw_null)))
+      (inline_value
+        (keyword
+          (kw_false)))
+      (inline_value
+        (inline_scalar)))))
+
+==================
+Inline redundant-leading-zero decimals stay strings (spec 0.8.0 § 5.2)
+==================
+a: [01234, -045, 00, 0_7, 01.5, 05e3]
+
+---
+
+(source_file
+  (object_pair
+    (key)
+    (sep_string)
+    (inline_array
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar))
+      (inline_value
+        (inline_scalar)))))
+
+==================
+An escape in an inline value forces String before numeric or keyword typing (spec 0.7.0 § 3.7)
+==================
+a: [1\.0, t\u0072ue]
+
+---
+
+(source_file
+  (object_pair
+    (key)
+    (sep_string)
+    (inline_array
+      (inline_value
+        (inline_scalar
+          (escape_sequence)))
+      (inline_value
+        (inline_scalar
+          (escape_sequence))))))
+
+==================
+Inline object values are typed; interior whitespace keeps a String (spec 0.8.0 § 5.2, § 5.8)
+==================
+o: {n: 7, f: 1.5, b: false, s: 1 2}
+
+---
+
+(source_file
+  (object_pair
+    (key)
+    (sep_string)
+    (inline_object
+      (inline_pair
+        (key)
+        (sep_string)
+        (inline_value
+          (integer)))
+      (inline_pair
+        (key)
+        (sep_string)
+        (inline_value
+          (float)))
+      (inline_pair
+        (key)
+        (sep_string)
+        (inline_value
+          (keyword
+            (kw_false))))
+      (inline_pair
+        (key)
+        (sep_string)
+        (inline_value
+          (inline_scalar))))))
+
+==================
+Inline raw values after :: are never typed (spec 0.7.0 § 5.8.5)
+==================
+o: {r:: 42, s: 42}
+
+---
+
+(source_file
+  (object_pair
+    (key)
+    (sep_string)
+    (inline_object
+      (inline_pair
+        (key)
+        (sep_raw)
+        (inline_raw_scalar))
+      (inline_pair
+        (key)
+        (sep_string)
+        (inline_value
+          (integer))))))

@@ -190,3 +190,53 @@ ab: 1
     key: (key)
     separator: (sep_string)
     value: (integer)))
+
+==================
+Empty double-quoted segment is EmptyKey (spec 0.7.0 § 6.5)
+:error
+==================
+"": 1
+
+---
+
+(source_file)
+
+==================
+Empty single-quoted segment is EmptyKey (spec 0.7.0 § 6.5)
+:error
+==================
+'': 1
+
+---
+
+(source_file)
+
+==================
+Empty backtick-quoted segment is EmptyKey (spec 0.7.0 § 6.5)
+:error
+==================
+``: 1
+
+---
+
+(source_file)
+
+==================
+Empty quoted segment inside a dotted path is EmptyKey (spec 0.7.0 § 6.5)
+:error
+==================
+a."".b: 1
+
+---
+
+(source_file)
+
+==================
+Raw DEL in a bare key is InvalidKey (spec 0.7.0 § 4 <key-char>)
+:error
+==================
+ab: 1
+
+---
+
+(source_file)

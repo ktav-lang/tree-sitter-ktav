@@ -13,35 +13,39 @@ For the format specification's own history, see the
 
 ## Unreleased
 
-## 0.8.0 — 2026-09-28
+## [0.8.0] — 2026-09-28
 
-Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`).
-Version 0.8.0 adds no syntax over 0.7.0; its § 5.2 leading-zero typing
-rule is reflected in the editor tree by classifying those forms as scalars.
-The crate/package version moves to **0.8.0**, in step with the core and
-the specification (0.7.x was never tagged for this package).
+Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`)
+and covers every syntax change since 0.6: 0.7.0's quoted keys, escape
+table, whitespace set and root-kind rules, and 0.8.0's § 5.2 leading-zero
+typing rule. The crate/package version moves to **0.8.0**, in step with
+the core and the specification (0.7.x was never tagged for this package).
 
 ### Added
 
-- Quoted key segments (§ 5.3.3): a key may open with a backtick-quoted
-  segment instead of a bare one, distinguished from a bare key in
-  `queries/highlights.scm`.
-- The escape table is complete, at 14 forms (§ 3.7).
+- Quoted key segments (§ 5.3.3): a key segment may be written `"…"`,
+  `'…'` or `` `…` `` instead of bare, per dotted-path segment, and is
+  distinguished from a bare key in `queries/highlights.scm`.
+- The escape table is complete, at 14 forms (§ 3.7), including `\uXXXX`
+  with surrogate pairs (§ 3.7.1).
+- Inline values inside `{...}` and `[...]` are typed like whole-line
+  values: `integer`, `float` and `keyword` nodes instead of
+  `inline_scalar` (§ 5.2, § 5.8). An escape forces String (§ 3.7), and
+  `::` values stay raw (§ 5.8.5).
 - Exactly one leading byte-order mark is skipped (§ 3.1).
 
 ### Fixed
 
-- Grammar openers recognize all 23 inline whitespace code points
-  (§ 3.3), not only ASCII whitespace.
-- Highlight queries capture raw top-level and inline scalar values;
-  locals queries define scopes and keys for inline objects.
-- Inline object and array highlights capture only the anonymous brace
-  and bracket delimiter tokens, leaving their contents to their own captures.
-
+- The full 25-code-point whitespace set (§ 3.3) is recognised
+  everywhere: indentation, token-edge trimming, compound openers and
+  closers, comments and blank lines — not only ASCII whitespace.
+- A lone surrogate in `\uXXXX`, or a high surrogate not followed by a low
+  one, is a parse error (`BadEscapeSequence`, § 3.7.1).
+- An empty quoted key segment (`""`, `''`, ` `` `) is a parse error
+  (`EmptyKey`, § 6.5); `" "` is still a valid one-space key.
+- DEL (`0x7F`) is no longer accepted as a bare key character (§ 4).
 - The spaced-key positional rule applies per segment, not per word
   (§ 5.3.3).
-- The full 25-code-point whitespace set (§ 3.3) is recognised and
-  trimmed at token edges, not the narrower ASCII-only set used before.
 - A lone CR is accepted as a valid line terminator (§ 3.2).
 - A raw `#` is admitted as an ordinary key character (§ 3.4, § 4).
 - The first content line fixes the root kind (§ 5.0.1): pair-shaped Array
@@ -58,11 +62,18 @@ the specification (0.7.x was never tagged for this package).
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
+- Highlight queries capture raw top-level and inline scalar values;
+  locals queries define scopes and keys for inline objects.
+- Inline object and array highlights capture only the anonymous brace
+  and bracket delimiter tokens, leaving their contents to their own captures.
 
 ### Changed
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
   valid-fixture allow-list and checks root kinds against JSON oracles.
+- Every `invalid/` fixture must surface a syntax error unless its
+  expected error is semantic (`DuplicateKey`, `KeyPathConflict`,
+  `InvalidUtf8`), which a context-free grammar cannot detect.
 - Corpus guard validates manifest, version, and oracle schemas, and
   safely validates raw-byte fixture stems.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`

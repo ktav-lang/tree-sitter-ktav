@@ -1,6 +1,6 @@
 // Tree-sitter external scanner for Ktav.
 //
-// Emits twelve tokens that the LR(1) grammar generated from grammar.js
+// Emits seventeen tokens that the LR(1) grammar generated from grammar.js
 // cannot express on its own:
 //
 //   _marker_ws  — a zero-width assertion that fires only when the
@@ -56,6 +56,12 @@
 //   _top_scalar_eof / _comment_eof — complete root scalar/comment at EOF.
 //   _root_fallback_scalar — first-line scalar without a pair separator.
 //   _array_follow_eof — final Array scalar, including pair-shaped text.
+//   _inline_integer / _inline_float / _inline_null / _inline_true /
+//   _inline_false — an inline value (inside `{...}` / `[...]`) whose
+//                      whole trimmed text, up to its unescaped `,` / `}`
+//                      / `]`, is a number or keyword. Any escape forces
+//                      String (§ 3.7), so the scanner declines and the
+//                      grammar's `inline_scalar` takes over.
 //
 // All tokens are stateless: the parser supplies the necessary context
 // via `valid_symbols`. The external_scanner_state size is therefore
@@ -78,6 +84,11 @@ enum TokenType {
     COMMENT_EOF,
     ROOT_FALLBACK_SCALAR,
     ARRAY_FOLLOW_EOF,
+    INLINE_INTEGER,
+    INLINE_FLOAT,
+    INLINE_NULL,
+    INLINE_TRUE,
+    INLINE_FALSE,
 };
 
 void *tree_sitter_ktav_external_scanner_create(void) {
@@ -143,6 +154,109 @@ static bool scan_digit_run(TSLexer *lexer, int base) {
             if (digit < 0 || digit >= base) return true;
         }
     }
+}
+
+// `[0-9]([_]?[0-9])*` over `text[*pos..len)` for the given base.
+static bool buffer_digit_run(const char *text, unsigned len, unsigned *pos, int base) {
+    unsigned i = *pos;
+    if (i >= len) return false;
+    int digit = ascii_digit_value(text[i]);
+    if (digit < 0 || digit >= base) return false;
+    i++;
+    while (i < len) {
+        if (text[i] == '_') {
+            if (i + 1 >= len) return false;
+            digit = ascii_digit_value(text[i + 1]);
+            if (digit < 0 || digit >= base) return false;
+            i += 2;
+            continue;
+        }
+        digit = ascii_digit_value(text[i]);
+        if (digit < 0 || digit >= base) break;
+        i++;
+    }
+    *pos = i;
+    return true;
+}
+
+enum NumberKind { NOT_A_NUMBER, NUMBER_INTEGER, NUMBER_FLOAT };
+
+// Same literal shapes as the `integer` / `float` rules in grammar.js,
+// including § 5.2's redundant-leading-zero exception.
+static enum NumberKind classify_number(const char *text, unsigned len) {
+    unsigned i = 0;
+    if (i < len && (text[i] == '+' || text[i] == '-')) i++;
+    if (i >= len) return NOT_A_NUMBER;
+    if (text[i] == '0') {
+        i++;
+        if (i < len && (text[i] == 'x' || text[i] == 'o' || text[i] == 'b')) {
+            int base = text[i] == 'x' ? 16 : text[i] == 'o' ? 8 : 2;
+            i++;
+            if (!buffer_digit_run(text, len, &i, base) || i != len) return NOT_A_NUMBER;
+            return NUMBER_INTEGER;
+        }
+        if (i < len && ((text[i] >= '0' && text[i] <= '9') || text[i] == '_')) return NOT_A_NUMBER;
+    } else {
+        if (text[i] < '1' || text[i] > '9' || !buffer_digit_run(text, len, &i, 10)) {
+            return NOT_A_NUMBER;
+        }
+    }
+    if (i == len) return NUMBER_INTEGER;
+    if (text[i] == '.') {
+        i++;
+        if (!buffer_digit_run(text, len, &i, 10)) return NOT_A_NUMBER;
+        if (i == len) return NUMBER_FLOAT;
+    }
+    if (text[i] != 'e' && text[i] != 'E') return NOT_A_NUMBER;
+    i++;
+    if (i < len && (text[i] == '+' || text[i] == '-')) i++;
+    if (!buffer_digit_run(text, len, &i, 10) || i != len) return NOT_A_NUMBER;
+    return NUMBER_FLOAT;
+}
+
+static bool scan_inline_value(TSLexer *lexer, const bool *valid_symbols) {
+    while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
+    char text[256];
+    unsigned len = 0;
+    bool trailing_ws = false;
+    for (;;) {
+        int32_t c = lexer->lookahead;
+        if (lexer->eof(lexer) || c == ',' || c == '}' || c == ']' || c == '\r' || c == '\n') break;
+        if (is_h_ws(c)) {
+            trailing_ws = true;
+            lexer->advance(lexer, false);
+            continue;
+        }
+        // Interior whitespace, an escape, or non-ASCII text is never a number or keyword.
+        if (trailing_ws || c == '\\' || c > 127 || len == sizeof text) return false;
+        text[len++] = (char)c;
+        lexer->advance(lexer, false);
+        lexer->mark_end(lexer);
+    }
+    if (len == 0) return false;
+
+    if (len == 4 && !memcmp(text, "null", 4) && valid_symbols[INLINE_NULL]) {
+        lexer->result_symbol = INLINE_NULL;
+        return true;
+    }
+    if (len == 4 && !memcmp(text, "true", 4) && valid_symbols[INLINE_TRUE]) {
+        lexer->result_symbol = INLINE_TRUE;
+        return true;
+    }
+    if (len == 5 && !memcmp(text, "false", 5) && valid_symbols[INLINE_FALSE]) {
+        lexer->result_symbol = INLINE_FALSE;
+        return true;
+    }
+    enum NumberKind kind = classify_number(text, len);
+    if (kind == NUMBER_INTEGER && valid_symbols[INLINE_INTEGER]) {
+        lexer->result_symbol = INLINE_INTEGER;
+        return true;
+    }
+    if (kind == NUMBER_FLOAT && valid_symbols[INLINE_FLOAT]) {
+        lexer->result_symbol = INLINE_FLOAT;
+        return true;
+    }
+    return false;
 }
 
 static bool is_keyword(const char *prefix, unsigned length) {
@@ -400,6 +514,15 @@ bool tree_sitter_ktav_external_scanner_scan(void *payload, TSLexer *lexer, const
         // is exactly the § 6.10 rejection we want. The two branches are
         // mutually exclusive: never fall through to STRICT_EOL.
         return false;
+    }
+
+    // Inline typed values. Skipped during error recovery (every symbol is
+    // valid then), where a failed scan here would have advanced the lexer.
+    bool inline_typed = valid_symbols[INLINE_INTEGER] || valid_symbols[INLINE_FLOAT] ||
+                        valid_symbols[INLINE_NULL] || valid_symbols[INLINE_TRUE] ||
+                        valid_symbols[INLINE_FALSE];
+    if (inline_typed && !valid_symbols[CONTENT_LINE]) {
+        return scan_inline_value(lexer, valid_symbols);
     }
 
     // _verbatim_close — matches `[ \t]*))[ \t]*\r?\n` (or EOF). The

@@ -510,7 +510,7 @@
             "members": [
               {
                 "type": "PATTERN",
-                "value": "[^\\x00-\\x08\\x0E-\\x1F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\\"'`]"
+                "value": "[^\\x00-\\x08\\x0E-\\x1F\\x7F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\\"'`]"
               },
               {
                 "type": "PATTERN",
@@ -518,7 +518,7 @@
               },
               {
                 "type": "PATTERN",
-                "value": "\\\\u[0-9a-fA-F]{4}"
+                "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
               }
             ]
           },
@@ -529,7 +529,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[^\\x00-\\x08\\x0E-\\x1F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\]"
+                  "value": "[^\\x00-\\x08\\x0E-\\x1F\\x7F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\]"
                 },
                 {
                   "type": "PATTERN",
@@ -537,7 +537,7 @@
                 },
                 {
                   "type": "PATTERN",
-                  "value": "\\\\u[0-9a-fA-F]{4}"
+                  "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
                 }
               ]
             }
@@ -554,7 +554,7 @@
           "members": [
             {
               "type": "PATTERN",
-              "value": "[^\\x00-\\x08\\x0E-\\x1F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\]"
+              "value": "[^\\x00-\\x08\\x0E-\\x1F\\x7F \\t\\x0B\\x0C\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\[\\]\\{\\}\\(\\):,.\\r\\n\\\\]"
             },
             {
               "type": "PATTERN",
@@ -562,7 +562,7 @@
             },
             {
               "type": "PATTERN",
-              "value": "\\\\u[0-9a-fA-F]{4}"
+              "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
             }
           ]
         }
@@ -581,7 +581,7 @@
                 "value": "\""
               },
               {
-                "type": "REPEAT",
+                "type": "REPEAT1",
                 "content": {
                   "type": "CHOICE",
                   "members": [
@@ -595,7 +595,7 @@
                     },
                     {
                       "type": "PATTERN",
-                      "value": "\\\\u[0-9a-fA-F]{4}"
+                      "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
                     }
                   ]
                 }
@@ -614,7 +614,7 @@
                 "value": "'"
               },
               {
-                "type": "REPEAT",
+                "type": "REPEAT1",
                 "content": {
                   "type": "CHOICE",
                   "members": [
@@ -628,7 +628,7 @@
                     },
                     {
                       "type": "PATTERN",
-                      "value": "\\\\u[0-9a-fA-F]{4}"
+                      "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
                     }
                   ]
                 }
@@ -647,7 +647,7 @@
                 "value": "`"
               },
               {
-                "type": "REPEAT",
+                "type": "REPEAT1",
                 "content": {
                   "type": "CHOICE",
                   "members": [
@@ -661,7 +661,7 @@
                     },
                     {
                       "type": "PATTERN",
-                      "value": "\\\\u[0-9a-fA-F]{4}"
+                      "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
                     }
                   ]
                 }
@@ -1201,8 +1201,67 @@
           "name": "nested_inline_array"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_integer"
+          },
+          "named": true,
+          "value": "integer"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_float"
+          },
+          "named": true,
+          "value": "float"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_keyword"
+          },
+          "named": true,
+          "value": "keyword"
+        },
+        {
           "type": "SYMBOL",
           "name": "inline_scalar"
+        }
+      ]
+    },
+    "_inline_keyword": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_null"
+          },
+          "named": true,
+          "value": "kw_null"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_true"
+          },
+          "named": true,
+          "value": "kw_true"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_false"
+          },
+          "named": true,
+          "value": "kw_false"
         }
       ]
     },
@@ -1349,7 +1408,7 @@
           },
           {
             "type": "PATTERN",
-            "value": "\\\\u[0-9a-fA-F]{4}"
+            "value": "\\\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\\\u[dD][c-fC-F][0-9a-fA-F]{2})"
           }
         ]
       }
@@ -1921,6 +1980,26 @@
     {
       "type": "SYMBOL",
       "name": "_array_follow_eof"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inline_integer"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inline_float"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inline_null"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inline_true"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inline_false"
     }
   ],
   "inline": [],

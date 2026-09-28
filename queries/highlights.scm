@@ -44,7 +44,7 @@
 (kw_true)  @constant.builtin.boolean
 (kw_false) @constant.builtin.boolean
 
-; ---- Number literals (new in spec 0.5.0) ----
+; ---- Number literals (block and inline values) ----
 (integer) @number
 (float)   @number.float
 

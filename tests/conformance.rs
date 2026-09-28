@@ -596,6 +596,43 @@ fn conformance_invalid_fixtures_do_not_panic() {
     );
 }
 
+// Categories a context-free grammar cannot see: they need a symbol table
+// (duplicates, path conflicts) or pre-decoding byte validation.
+const SEMANTIC_ONLY_ERRORS: [&str; 3] = ["DuplicateKey", "KeyPathConflict", "InvalidUtf8"];
+
+#[test]
+fn conformance_syntactic_invalid_fixtures_surface_errors() {
+    let invalid_dir = spec_tests_dir().join("invalid");
+    let mut parser = make_parser();
+    let mut checked = 0usize;
+    let mut failures = Vec::new();
+    for path in collect_ktav_files(&invalid_dir) {
+        let oracle: serde_json::Value = serde_json::from_slice(
+            &fs::read(path.with_extension("json")).expect("invalid fixture oracle missing"),
+        )
+        .expect("invalid fixture oracle is not JSON");
+        let expected = oracle["expected_error"]
+            .as_str()
+            .expect("invalid oracle lacks expected_error");
+        if SEMANTIC_ONLY_ERRORS.contains(&expected) {
+            continue;
+        }
+        checked += 1;
+        let bytes = fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let tree = parser.parse(&bytes, None).expect("parser returned None");
+        if !tree.root_node().has_error() {
+            failures.push(format!("{} ({expected})", path.display()));
+        }
+    }
+    assert!(checked > 0, "no syntactic invalid fixtures found");
+    assert!(
+        failures.is_empty(),
+        "{} syntactic invalid fixture(s) parsed without ERROR:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
 #[test]
 fn conformance_parseable_noncanonical_fixtures_parse_cleanly() {
     let tests_dir = spec_tests_dir();
@@ -657,6 +694,22 @@ fn spec_08_redundant_leading_zeros_are_scalar_nodes() {
                 "{body}: {sexp}"
             );
         }
+
+        let inline = format!("value: [{body}, x]\n");
+        let tree = parser.parse(&inline, None).expect("parser returned None");
+        let sexp = tree.root_node().to_sexp();
+        assert!(!tree.root_node().has_error(), "[{body}]: {sexp}");
+        let inline_expected = if expected == "scalar" {
+            "inline_scalar"
+        } else {
+            expected
+        };
+        assert!(
+            sexp.starts_with(&format!(
+                "(source_file (object_pair key: (key) separator: (sep_string) value: (inline_array (inline_value ({inline_expected}"
+            )),
+            "[{body}]: expected {inline_expected}, got {sexp}"
+        );
     }
 }
 

@@ -11,8 +11,8 @@ Representative named nodes from the CST (`src/node-types.json`) include:
 | `object_pair`              | `key SEP value` line                            |
 | `key` / `dotted_key`       | the key portion and dotted segments             |
 | `sep_string` / `sep_raw`   | the `:` and `::` pair separators                |
-| `keyword` / `kw_null` / `kw_true` / `kw_false`     | keywords                  |
-| `integer` / `float`        | integer and floating-point values               |
+| `keyword` / `kw_null` / `kw_true` / `kw_false`     | keywords, whole-line and inline |
+| `integer` / `float`        | numbers, whole-line and inline (§ 5.2 typing)  |
 | `scalar` / `raw_scalar`    | ordinary and raw single-line values             |
 | `compound_object`          | `{` … `}` block                                 |
 | `compound_array`           | `[` … `]` block                                 |
@@ -42,8 +42,8 @@ required `value` and optional `marker`.
 | `object_pair`              | строку `ключ SEP значение`                       |
 | `key` / `dotted_key`       | ключ и сегменты точечного пути                   |
 | `sep_string` / `sep_raw`   | разделители пар `:` и `::`                       |
-| `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова               |
-| `integer` / `float`        | целые числа и числа с плавающей точкой            |
+| `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова, в строке и inline |
+| `integer` / `float`        | числа, в строке и inline (типизация § 5.2)       |
 | `scalar` / `raw_scalar`    | обычные и raw-значения в одну строку              |
 | `compound_object`          | блок `{` … `}`                                   |
 | `compound_array`           | блок `[` … `]`                                   |
@@ -73,8 +73,8 @@ required `value` and optional `marker`.
 | `object_pair`             | `key SEP value` 行                            |
 | `key` / `dotted_key`      | 键及其点分段                                   |
 | `sep_string` / `sep_raw`  | 键值对分隔符 `:` 和 `::`                      |
-| `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字               |
-| `integer` / `float`       | 整数和浮点数                                   |
+| `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字（整行值与内联值） |
+| `integer` / `float`       | 数值（整行值与内联值，按 § 5.2 推断）          |
 | `scalar` / `raw_scalar`   | 普通及 raw 单行值                              |
 | `compound_object`         | `{` … `}` 块                                  |
 | `compound_array`          | `[` … `]` 块                                  |

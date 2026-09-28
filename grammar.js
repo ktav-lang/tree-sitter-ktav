@@ -12,6 +12,29 @@
  *   - an array item (inside an open `[` array, or at the top level)
  *   - raw content of a multi-line string
  *
+ * Changes from 0.7.0 to 0.8.0:
+ *   - No new syntax. § 5.2: a decimal with a redundant leading zero
+ *     (`01234`, `-045`, `00`, `0_7`, and a float's integer part as in
+ *     `01.5`) is a String, so it is a `scalar` / `inline_scalar` node,
+ *     never `integer` / `float`. `0`, `0.5`, and base-prefixed forms keep
+ *     their numeric nodes.
+ *   - Inline values are typed like whole-line values: `integer`, `float`,
+ *     and `keyword` nodes inside `{...}` / `[...]` (external scanner).
+ *
+ * Changes from 0.6.x to 0.7.0:
+ *   - § 3.3: whitespace is the fixed 25-code-point set everywhere
+ *     (indentation, trimming, openers/closers, comments, blank lines).
+ *   - § 3.1: exactly one leading byte-order mark is skipped.
+ *   - § 3.2: a lone CR is a line terminator.
+ *   - § 5.3.3: quoted key segments (`"…"`, `'…'`, `` `…` ``), non-empty,
+ *     per dotted-path segment; nothing may follow the closer.
+ *   - § 3.7 / § 3.7.1: the escape table grows to fourteen forms — `\"`,
+ *     `\'`, `` \` ``, and `\uXXXX` (surrogates only as a high+low pair).
+ *   - § 4: raw `#`, VT, and FF are key content; DEL and other control
+ *     bytes are not.
+ *   - § 5.0.1: the first content line fixes the root kind by shape.
+ *   - § 4 / § 5.8.5: `::` inline values are raw, never dispatched.
+ *
  * Changes from 0.5.0 to 0.6.0:
  *   - Keys now process escape sequences (§ 3.7). The escape table grows
  *     to 10 entries by adding `\.` (literal dot — does NOT split the
@@ -56,6 +79,12 @@
  *   - Indentation is not significant (matches the spec).
  */
 
+// § 3.7.1: `\uXXXX` names a scalar value; a high surrogate must be
+// immediately followed by a low one, and a lone surrogate of either kind
+// is `BadEscapeSequence`.
+const UNICODE_ESCAPE =
+  /\\u([0-9a-cA-CeEfF][0-9a-fA-F]{3}|[dD][0-7][0-9a-fA-F]{2}|[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2})/;
+
 module.exports = grammar({
   name: 'ktav',
 
@@ -95,6 +124,11 @@ module.exports = grammar({
     $._comment_eof,      // final comment without a newline
     $._root_fallback_scalar, // first-line scalar that is not a pair candidate
     $._array_follow_eof, // final Array item may contain a colon
+    $._inline_integer,   // whole inline value that is an Integer (§ 5.2)
+    $._inline_float,     // whole inline value that is a Float (§ 5.2)
+    $._inline_null,      // whole inline value `null`
+    $._inline_true,      // whole inline value `true`
+    $._inline_false,     // whole inline value `false`
   ],
 
   conflicts: $ => [],
@@ -246,9 +280,9 @@ module.exports = grammar({
 
     // Bare key segment (spec 0.6.0 § 4, positional rule added in
     // 0.7.0 § 5.3.3): a non-empty run of plain key bytes and/or escape
-    // sequences. Plain key bytes exclude whitespace, the bracket/
-    // paren/brace bytes, `:`, `,`, the dotted-path separator `.`, and
-    // the escape lead `\`. Raw `#` is an ordinary key byte (spec
+    // sequences. Plain key bytes exclude whitespace, control bytes, DEL,
+    // the bracket/paren/brace bytes, `:`, `,`, the dotted-path separator
+    // `.`, and the escape lead `\`. Raw `#` is an ordinary key byte (spec
     // 0.7.0 § 3.4/§ 4 `<key-char>`); only a trimmed line whose first
     // non-whitespace code points are `##` is a comment, and the
     // whole-line `comment` token wins that competition by longest match.
@@ -256,8 +290,9 @@ module.exports = grammar({
     // inside a key when escaped. Spec 0.7.0 § 3.7 has fourteen escape
     // forms: the ten from 0.6.0 plus `\"`, `\'`, `` \` ``, and `\uXXXX`
     // (exactly four case-insensitive hex digits, never partially
-    // consumed — a malformed `\u` form simply fails every alternative
-    // below, which is what makes it a parse error).
+    // consumed; a surrogate only as a high+low pair — a malformed `\u`
+    // form or a lone surrogate fails every alternative below, which is
+    // what makes it a parse error, § 3.7.1).
     //
     // The FIRST byte additionally excludes `"`, `'`, `` ` `` — those
     // open a `quoted_key_segment` instead (§ 5.3.3's positional rule)
@@ -268,14 +303,14 @@ module.exports = grammar({
     // is always the start of an escape sequence (fourteen forms).
     _bare_key_segment: $ => token(seq(
       choice(
-        /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\"'`]/,
+        /[^\x00-\x08\x0E-\x1F\x7F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\"'`]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
-        /\\u[0-9a-fA-F]{4}/,
+        UNICODE_ESCAPE,
       ),
       repeat(choice(
-        /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
+        /[^\x00-\x08\x0E-\x1F\x7F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
-        /\\u[0-9a-fA-F]{4}/,
+        UNICODE_ESCAPE,
       )),
     )),
 
@@ -297,9 +332,9 @@ module.exports = grammar({
     // states, so tree-sitter never has to choose between them for the
     // same input position, even though both can start with a quote.
     _bare_key_segment_cont: $ => token(repeat1(choice(
-      /[^\x00-\x08\x0E-\x1F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
+      /[^\x00-\x08\x0E-\x1F\x7F \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\[\]\{\}\(\):,.\r\n\\]/,
       /\\[\\,\}\]\{\[nr.:"'`]/,
-      /\\u[0-9a-fA-F]{4}/,
+      UNICODE_ESCAPE,
     ))),
 
     // Quoted key segment (spec 0.7.0 § 5.3.3, § 4): opened by `"`, `'`,
@@ -309,6 +344,8 @@ module.exports = grammar({
     // content inside it (never split/terminate), and content is never
     // trimmed. Because the whole segment is a single token, this
     // opacity falls out of tokenization — no external scanner needed.
+    // Content is non-empty: `""`, `''`, and `` `` `` are `EmptyKey`
+    // (§ 6.5), while `" "` is a valid one-space key.
     // Excluded from content: ASCII control bytes other than tab/VT/FF,
     // DEL, the escape lead `\`, and the segment's own delimiter (§ 4's
     // `<dq-char>`/`<sq-char>`/`<bt-char>`).
@@ -321,20 +358,20 @@ module.exports = grammar({
     // and the other two raw quote characters need no escape at all) and
     // `\uXXXX`.
     quoted_key_segment: $ => token(choice(
-      seq('"', repeat(choice(
+      seq('"', repeat1(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\"]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
-        /\\u[0-9a-fA-F]{4}/,
+        UNICODE_ESCAPE,
       )), '"'),
-      seq("'", repeat(choice(
+      seq("'", repeat1(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\']/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
-        /\\u[0-9a-fA-F]{4}/,
+        UNICODE_ESCAPE,
       )), "'"),
-      seq('`', repeat(choice(
+      seq('`', repeat1(choice(
         /[^\x00-\x08\x0A\x0D\x0E-\x1F\x7F\\`]/,
         /\\[\\,\}\]\{\[nr.:"'`]/,
-        /\\u[0-9a-fA-F]{4}/,
+        UNICODE_ESCAPE,
       )), '`'),
     )),
 
@@ -454,12 +491,24 @@ module.exports = grammar({
       optional(','),
     ),
 
-    // An inline value is either a nested inline compound, or an inline
-    // scalar (which may contain escape sequences).
+    // An inline value is a nested inline compound, a typed scalar, or an
+    // inline scalar (which may contain escape sequences). Typing needs the
+    // whole value up to its unescaped `,` / `}` / `]`, so the external
+    // scanner decides it: an escape anywhere forces String (§ 3.7), and
+    // § 5.2's redundant-leading-zero forms stay `inline_scalar`.
     inline_value: $ => choice(
       $.nested_inline_object,
       $.nested_inline_array,
+      alias($._inline_integer, $.integer),
+      alias($._inline_float, $.float),
+      alias($._inline_keyword, $.keyword),
       $.inline_scalar,
+    ),
+
+    _inline_keyword: $ => choice(
+      alias($._inline_null, $.kw_null),
+      alias($._inline_true, $.kw_true),
+      alias($._inline_false, $.kw_false),
     ),
 
     nested_inline_object: $ => seq(
@@ -495,9 +544,10 @@ module.exports = grammar({
     // their literal quote byte (§ 5.3.3: recognised in every escape-aware
     // context alike, values included, even though a raw quote in a value
     // is never structural). `\uXXXX` names a code point by exactly four
-    // case-insensitive hex digits; a malformed form (fewer than four
-    // digits) matches no alternative here and is therefore never
-    // partially consumed.
+    // case-insensitive hex digits; a surrogate pair is one token. A
+    // malformed form (fewer than four digits) or a lone surrogate
+    // matches no alternative here and is therefore never partially
+    // consumed.
     escape_sequence: $ => token(choice(
       '\\\\',
       '\\,',
@@ -512,7 +562,7 @@ module.exports = grammar({
       '\\"',
       '\\\'',
       '\\`',
-      /\\u[0-9a-fA-F]{4}/,
+      UNICODE_ESCAPE,
     )),
 
     // Leading chunk of a scalar: first byte excludes whitespace and the

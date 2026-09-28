@@ -143,8 +143,8 @@ tree-sitter 的编辑器都可以在解析器构建后直接使用。
 | `object_pair`             | `key SEP value` 行                            |
 | `key` / `dotted_key`      | 键及其点分段                                   |
 | `sep_string` / `sep_raw`  | 键值对分隔符 `:` 和 `::`                      |
-| `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字               |
-| `integer` / `float`       | 整数和浮点数                                   |
+| `keyword` / `kw_null` / `kw_true` / `kw_false`     | 关键字（整行值与内联值） |
+| `integer` / `float`       | 数值（整行值与内联值，按 § 5.2 推断）          |
 | `scalar` / `raw_scalar`   | 普通及 raw 单行值                              |
 | `compound_object`         | `{` … `}` 块                                  |
 | `compound_array`          | `[` … `]` 块                                  |
@@ -180,8 +180,9 @@ CLI 即可构建。
 
 `0.8.0` — 面向 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md) 语法的 Tree-sitter 语法包。
 语法可无错误地解析所有固定的 spec 0.8 有效样例，并将每个根
-Object/Array 与 JSON 预期结果核对。Tree-sitter 为编辑器构建
-语法树，不代替参考 Rust 解析器的语义校验。
+Object/Array 与 JSON 预期结果核对。除语义类错误（`DuplicateKey`、
+`KeyPathConflict`、`InvalidUtf8`）外，每个无效样例都会产生语法错误：
+Tree-sitter 为编辑器构建语法树，不代替参考 Rust 解析器的语义校验。
 
 ## 许可证
 

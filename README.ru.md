@@ -148,8 +148,8 @@ source = { git = "https://github.com/ktav-lang/tree-sitter-ktav", rev = "main" }
 | `object_pair`              | строку `ключ SEP значение`                       |
 | `key` / `dotted_key`       | ключ и сегменты точечного пути                   |
 | `sep_string` / `sep_raw`   | разделители пар `:` и `::`                       |
-| `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова               |
-| `integer` / `float`        | целые числа и числа с плавающей точкой            |
+| `keyword` / `kw_null` / `kw_true` / `kw_false`     | ключевые слова, в строке и inline |
+| `integer` / `float`        | числа, в строке и inline (типизация § 5.2)       |
 | `scalar` / `raw_scalar`    | обычные и raw-значения в одну строку              |
 | `compound_object`          | блок `{` … `}`                                   |
 | `compound_array`           | блок `[` … `]`                                   |
@@ -185,7 +185,9 @@ cargo test                   # тесты Rust, включая проверку 
 
 `0.8.0` — Tree-sitter-грамматика синтаксиса [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
 Грамматика разбирает все закреплённые валидные фикстуры spec 0.8 без
-ошибок и сверяет корневой Object/Array с JSON-оракулом. Tree-sitter
+ошибок и сверяет корневой Object/Array с JSON-оракулом. Каждая
+невалидная фикстура даёт синтаксическую ошибку, кроме семантических
+категорий (`DuplicateKey`, `KeyPathConflict`, `InvalidUtf8`): Tree-sitter
 строит синтаксическое дерево для редакторов и не заменяет
 семантическую проверку эталонного Rust-парсера.
 

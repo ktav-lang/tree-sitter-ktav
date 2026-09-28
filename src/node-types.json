@@ -335,7 +335,19 @@
       "required": true,
       "types": [
         {
+          "type": "float",
+          "named": true
+        },
+        {
           "type": "inline_scalar",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "keyword",
           "named": true
         },
         {

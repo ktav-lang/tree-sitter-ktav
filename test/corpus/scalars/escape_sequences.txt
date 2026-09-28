@@ -105,13 +105,12 @@ k: [\uD83D\uDE00]
     value: (inline_array
       (inline_value
         (inline_scalar
-          (escape_sequence)
           (escape_sequence))))))
 
 ==================
-Lone surrogate: accepted at the tree-shape level (spec 0.7.0 § 3.7.1 makes this a BadEscapeSequence error, but that is a semantic/diagnosis check requiring cross-token pairing state a regex token cannot express; deferred to the reference parser, matching § 12 of the gap audit)
+Surrogate pair in a key is one escape (spec 0.7.0 § 3.7.1)
 ==================
-k: [\uD800]
+a\uD83D\uDE00: 1
 
 ---
 
@@ -119,10 +118,37 @@ k: [\uD800]
   (object_pair
     key: (key)
     separator: (sep_string)
-    value: (inline_array
-      (inline_value
-        (inline_scalar
-          (escape_sequence))))))
+    value: (integer)))
+
+==================
+Lone high surrogate in an inline value is a parse error (spec 0.7.0 § 3.7.1)
+:error
+==================
+k: [\uD800]
+
+---
+
+(source_file)
+
+==================
+Lone low surrogate in a key is a parse error (spec 0.7.0 § 3.7.1)
+:error
+==================
+a\uDC00: 1
+
+---
+
+(source_file)
+
+==================
+High surrogate followed by a non-low-surrogate escape is a parse error (spec 0.7.0 § 3.7.1)
+:error
+==================
+a\uD800\u0041: 1
+
+---
+
+(source_file)
 
 ==================
 Malformed \u escape (fewer than four hex digits) is never partially consumed and fails to parse (spec 0.7.0 § 3.7.1)
