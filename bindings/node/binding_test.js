@@ -29,6 +29,62 @@ test("0.8 leading-zero values use string nodes", () => {
   );
 });
 
+test("inline numeric nodes do not depend on token length", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const value of [
+    `0.${"0".repeat(254)}`,
+    `0.${"0".repeat(255)}`,
+    `0.${"0".repeat(300)}`,
+    `1e+${"0".repeat(300)}`,
+  ]) {
+    const tree = parser.parse(`whole: ${value}\ninline: [${value}]\n`);
+    assert.equal(tree.rootNode.hasError, false);
+    const whole = tree.rootNode.namedChildren[0].childForFieldName("value");
+    const inline = tree.rootNode.namedChildren[1]
+      .childForFieldName("value").namedChildren[0].namedChildren[0];
+    assert.equal(whole.type, "float");
+    assert.equal(inline.type, "float", `inline ${value.length}-byte value`);
+  }
+
+  const notNumber = `0.${"0".repeat(300)}x`;
+  const tree = parser.parse(`inline: [${notNumber}]\n`);
+  assert.equal(tree.rootNode.hasError, false);
+  assert.equal(
+    tree.rootNode.namedChildren[0].childForFieldName("value").namedChildren[0].namedChildren[0].type,
+    "inline_scalar",
+  );
+});
+
+test("whole-line keywords require the complete trimmed value", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const value of ["truex", "falsehood", "nullish", "true1", "null_", "true x"]) {
+    for (const suffix of ["\n", "   \n", ""]) {
+      const tree = parser.parse(`value: ${value}${suffix}`);
+      assert.equal(tree.rootNode.hasError, false, `${value}${suffix}: ${tree.rootNode}`);
+      assert.equal(tree.rootNode.namedChildren[0].childForFieldName("value").type, "scalar");
+    }
+  }
+  for (const value of ["true", "false", "null"]) {
+    for (const suffix of ["\n", "   \n", "\u00A0\n", "\r", ""]) {
+      const tree = parser.parse(`value: ${value}${suffix}`);
+      assert.equal(tree.rootNode.hasError, false, `${value}${suffix}: ${tree.rootNode}`);
+      assert.equal(tree.rootNode.namedChildren[0].childForFieldName("value").type, "keyword");
+    }
+  }
+  for (const [source, kind] of [
+    ["true", "keyword"],
+    ["true   ", "keyword"],
+    ["truex", "top_scalar"],
+    ["truex   ", "top_scalar"],
+  ]) {
+    const tree = parser.parse(source);
+    assert.equal(tree.rootNode.hasError, false, `${source}: ${tree.rootNode}`);
+    assert.equal(tree.rootNode.namedChildren[0].childForFieldName("value").type, kind);
+  }
+});
+
 test("editor queries cover raw values and inline object scopes", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);

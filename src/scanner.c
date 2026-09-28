@@ -156,68 +156,88 @@ static bool scan_digit_run(TSLexer *lexer, int base) {
     }
 }
 
-// `[0-9]([_]?[0-9])*` over `text[*pos..len)` for the given base.
-static bool buffer_digit_run(const char *text, unsigned len, unsigned *pos, int base) {
-    unsigned i = *pos;
-    if (i >= len) return false;
-    int digit = ascii_digit_value(text[i]);
-    if (digit < 0 || digit >= base) return false;
-    i++;
-    while (i < len) {
-        if (text[i] == '_') {
-            if (i + 1 >= len) return false;
-            digit = ascii_digit_value(text[i + 1]);
-            if (digit < 0 || digit >= base) return false;
-            i += 2;
-            continue;
-        }
-        digit = ascii_digit_value(text[i]);
-        if (digit < 0 || digit >= base) break;
-        i++;
-    }
-    *pos = i;
-    return true;
-}
-
 enum NumberKind { NOT_A_NUMBER, NUMBER_INTEGER, NUMBER_FLOAT };
 
-// Same literal shapes as the `integer` / `float` rules in grammar.js,
-// including § 5.2's redundant-leading-zero exception.
-static enum NumberKind classify_number(const char *text, unsigned len) {
-    unsigned i = 0;
-    if (i < len && (text[i] == '+' || text[i] == '-')) i++;
-    if (i >= len) return NOT_A_NUMBER;
-    if (text[i] == '0') {
-        i++;
-        if (i < len && (text[i] == 'x' || text[i] == 'o' || text[i] == 'b')) {
-            int base = text[i] == 'x' ? 16 : text[i] == 'o' ? 8 : 2;
-            i++;
-            if (!buffer_digit_run(text, len, &i, base) || i != len) return NOT_A_NUMBER;
-            return NUMBER_INTEGER;
-        }
-        if (i < len && ((text[i] >= '0' && text[i] <= '9') || text[i] == '_')) return NOT_A_NUMBER;
-    } else {
-        if (text[i] < '1' || text[i] > '9' || !buffer_digit_run(text, len, &i, 10)) {
-            return NOT_A_NUMBER;
-        }
+enum NumberState {
+    NUMBER_START, NUMBER_SIGN, NUMBER_ZERO, NUMBER_DECIMAL,
+    NUMBER_DECIMAL_SEPARATOR, NUMBER_BASE_PREFIX, NUMBER_BASE,
+    NUMBER_BASE_SEPARATOR, NUMBER_DOT, NUMBER_FRACTION,
+    NUMBER_FRACTION_SEPARATOR, NUMBER_EXPONENT, NUMBER_EXPONENT_SIGN,
+    NUMBER_EXPONENT_DIGITS, NUMBER_EXPONENT_SEPARATOR, NUMBER_INVALID,
+};
+
+// Recognize § 3.6 numeric spelling incrementally, without a token-length limit.
+static enum NumberState advance_number(enum NumberState state, int32_t c, int *base) {
+    bool decimal_digit = c >= '0' && c <= '9';
+    int digit = ascii_digit_value(c);
+    switch (state) {
+        case NUMBER_START:
+            if (c == '+' || c == '-') return NUMBER_SIGN;
+            if (c == '0') return NUMBER_ZERO;
+            if (c >= '1' && c <= '9') return NUMBER_DECIMAL;
+            break;
+        case NUMBER_SIGN:
+            if (c == '0') return NUMBER_ZERO;
+            if (c >= '1' && c <= '9') return NUMBER_DECIMAL;
+            break;
+        case NUMBER_ZERO:
+            if (c == 'x' || c == 'o' || c == 'b') {
+                *base = c == 'x' ? 16 : c == 'o' ? 8 : 2;
+                return NUMBER_BASE_PREFIX;
+            }
+            if (c == '.') return NUMBER_DOT;
+            if (c == 'e' || c == 'E') return NUMBER_EXPONENT;
+            break;
+        case NUMBER_DECIMAL:
+            if (decimal_digit) return NUMBER_DECIMAL;
+            if (c == '_') return NUMBER_DECIMAL_SEPARATOR;
+            if (c == '.') return NUMBER_DOT;
+            if (c == 'e' || c == 'E') return NUMBER_EXPONENT;
+            break;
+        case NUMBER_DECIMAL_SEPARATOR:
+            if (decimal_digit) return NUMBER_DECIMAL;
+            break;
+        case NUMBER_BASE_PREFIX:
+        case NUMBER_BASE_SEPARATOR:
+            if (digit >= 0 && digit < *base) return NUMBER_BASE;
+            break;
+        case NUMBER_BASE:
+            if (digit >= 0 && digit < *base) return NUMBER_BASE;
+            if (c == '_') return NUMBER_BASE_SEPARATOR;
+            break;
+        case NUMBER_DOT:
+        case NUMBER_FRACTION_SEPARATOR:
+            if (decimal_digit) return NUMBER_FRACTION;
+            break;
+        case NUMBER_FRACTION:
+            if (decimal_digit) return NUMBER_FRACTION;
+            if (c == '_') return NUMBER_FRACTION_SEPARATOR;
+            if (c == 'e' || c == 'E') return NUMBER_EXPONENT;
+            break;
+        case NUMBER_EXPONENT:
+            if (c == '+' || c == '-') return NUMBER_EXPONENT_SIGN;
+            if (decimal_digit) return NUMBER_EXPONENT_DIGITS;
+            break;
+        case NUMBER_EXPONENT_SIGN:
+        case NUMBER_EXPONENT_SEPARATOR:
+            if (decimal_digit) return NUMBER_EXPONENT_DIGITS;
+            break;
+        case NUMBER_EXPONENT_DIGITS:
+            if (decimal_digit) return NUMBER_EXPONENT_DIGITS;
+            if (c == '_') return NUMBER_EXPONENT_SEPARATOR;
+            break;
+        case NUMBER_INVALID:
+            break;
     }
-    if (i == len) return NUMBER_INTEGER;
-    if (text[i] == '.') {
-        i++;
-        if (!buffer_digit_run(text, len, &i, 10)) return NOT_A_NUMBER;
-        if (i == len) return NUMBER_FLOAT;
-    }
-    if (text[i] != 'e' && text[i] != 'E') return NOT_A_NUMBER;
-    i++;
-    if (i < len && (text[i] == '+' || text[i] == '-')) i++;
-    if (!buffer_digit_run(text, len, &i, 10) || i != len) return NOT_A_NUMBER;
-    return NUMBER_FLOAT;
+    return NUMBER_INVALID;
 }
 
 static bool scan_inline_value(TSLexer *lexer, const bool *valid_symbols) {
     while (is_h_ws(lexer->lookahead)) lexer->advance(lexer, true);
-    char text[256];
-    unsigned len = 0;
+    char keyword[5];
+    unsigned keyword_len = 0;
+    enum NumberState number_state = NUMBER_START;
+    int base = 10;
     bool trailing_ws = false;
     for (;;) {
         int32_t c = lexer->lookahead;
@@ -228,26 +248,34 @@ static bool scan_inline_value(TSLexer *lexer, const bool *valid_symbols) {
             continue;
         }
         // Interior whitespace, an escape, or non-ASCII text is never a number or keyword.
-        if (trailing_ws || c == '\\' || c > 127 || len == sizeof text) return false;
-        text[len++] = (char)c;
+        if (trailing_ws || c == '\\' || c > 127) return false;
+        if (keyword_len < sizeof keyword) keyword[keyword_len] = (char)c;
+        if (keyword_len <= sizeof keyword) keyword_len++;
+        number_state = advance_number(number_state, c, &base);
         lexer->advance(lexer, false);
         lexer->mark_end(lexer);
     }
-    if (len == 0) return false;
+    if (keyword_len == 0) return false;
 
-    if (len == 4 && !memcmp(text, "null", 4) && valid_symbols[INLINE_NULL]) {
+    if (keyword_len == 4 && !memcmp(keyword, "null", 4) && valid_symbols[INLINE_NULL]) {
         lexer->result_symbol = INLINE_NULL;
         return true;
     }
-    if (len == 4 && !memcmp(text, "true", 4) && valid_symbols[INLINE_TRUE]) {
+    if (keyword_len == 4 && !memcmp(keyword, "true", 4) && valid_symbols[INLINE_TRUE]) {
         lexer->result_symbol = INLINE_TRUE;
         return true;
     }
-    if (len == 5 && !memcmp(text, "false", 5) && valid_symbols[INLINE_FALSE]) {
+    if (keyword_len == 5 && !memcmp(keyword, "false", 5) && valid_symbols[INLINE_FALSE]) {
         lexer->result_symbol = INLINE_FALSE;
         return true;
     }
-    enum NumberKind kind = classify_number(text, len);
+    enum NumberKind kind = NOT_A_NUMBER;
+    if (number_state == NUMBER_ZERO || number_state == NUMBER_DECIMAL ||
+        number_state == NUMBER_BASE) {
+        kind = NUMBER_INTEGER;
+    } else if (number_state == NUMBER_FRACTION || number_state == NUMBER_EXPONENT_DIGITS) {
+        kind = NUMBER_FLOAT;
+    }
     if (kind == NUMBER_INTEGER && valid_symbols[INLINE_INTEGER]) {
         lexer->result_symbol = INLINE_INTEGER;
         return true;

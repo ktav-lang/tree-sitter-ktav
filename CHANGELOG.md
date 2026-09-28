@@ -62,6 +62,10 @@ the core and the specification (0.7.x was never tagged for this package).
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
+- Inline numeric tokens no longer switch to string nodes after 256 bytes;
+  long literals keep the same node type as whole-line values.
+- Keyword prefixes such as `truex` remain strings; exact keywords retain
+  their node type with trailing whitespace and at EOF.
 - Highlight queries capture raw top-level and inline scalar values;
   locals queries define scopes and keys for inline objects.
 - Inline object and array highlights capture only the anonymous brace
@@ -71,9 +75,9 @@ the core and the specification (0.7.x was never tagged for this package).
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
   valid-fixture allow-list and checks root kinds against JSON oracles.
-- Every `invalid/` fixture must surface a syntax error unless its
-  expected error is semantic (`DuplicateKey`, `KeyPathConflict`,
-  `InvalidUtf8`), which a context-free grammar cannot detect.
+- Every `invalid/` fixture must surface a syntax error unless it needs
+  key validation (`DuplicateKey`, `KeyPathConflict`) or pre-parse UTF-8
+  byte validation (`InvalidUtf8`).
 - Corpus guard validates manifest, version, and oracle schemas, and
   safely validates raw-byte fixture stems.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`

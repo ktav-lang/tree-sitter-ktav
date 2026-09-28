@@ -1,6 +1,4 @@
 >>>>> lang=en
-### Fixed
-
 - The full 25-code-point whitespace set (§ 3.3) is recognised
   everywhere: indentation, token-edge trimming, compound openers and
   closers, comments and blank lines — not only ASCII whitespace.
@@ -27,14 +25,16 @@
 - Redundant-leading-zero decimals such as `01234` and `01.5` are scalar
   nodes, not integer/float nodes, while `0`, `0.5`, and base-prefixed
   integers keep their numeric nodes (§ 5.2).
+- Inline numeric tokens no longer switch to string nodes after 256 bytes;
+  long literals keep the same node type as whole-line values.
+- Keyword prefixes such as `truex` remain strings; exact keywords retain
+  their node type with trailing whitespace and at EOF.
 - Highlight queries capture raw top-level and inline scalar values;
   locals queries define scopes and keys for inline objects.
 - Inline object and array highlights capture only the anonymous brace
   and bracket delimiter tokens, leaving their contents to their own captures.
 
 >>>>> lang=ru
-### Исправлено
-
 - Полный набор пробельных символов из 25 кодовых точек (§ 3.3)
   распознаётся везде: в отступах, при обрезке краёв токенов, в открывающих
   и закрывающих строках составных значений, комментариях и пустых
@@ -64,14 +64,16 @@
 - Десятичные формы с избыточным ведущим нулём, например `01234` и `01.5`,
   становятся узлами скаляра, а не integer/float; `0`, `0.5` и числа с
   префиксом основания сохраняют числовые узлы (§ 5.2).
+- Длинные inline-числа больше не становятся строковыми узлами после 256
+  байт; их тип узла совпадает с типом значения в обычной строке.
+- Префиксы ключевых слов вроде `truex` остаются строками; точные ключевые
+  слова сохраняют свой тип с конечными пробелами и на EOF.
 - Запросы подсветки захватывают raw-скаляры верхнего уровня и inline-
   скаляры; запросы locals задают области видимости и ключи inline-объектов.
 - Подсветка inline-объектов и массивов захватывает только анонимные
   токены фигурных и квадратных скобок; содержимое получает собственные захваты.
 
 >>>>> lang=zh
-### 修复
-
 - 完整的 25 个码位空白字符集（§ 3.3）在各处都会被识别：缩进、词元
   边缘裁剪、复合值的开符与闭符、注释和空行——而不只是 ASCII 空白。
 - `\uXXXX` 中的单独代理项，或其后未跟低代理项的高代理项，属于解析
@@ -97,6 +99,10 @@
 - `01234`、`01.5` 等带冗余前导零的十进制形式归为标量节点，
   不再归为 integer/float；`0`、`0.5` 和带进制前缀的整数仍保留
   数值节点（§ 5.2）。
+- 内联数字词元不再超过 256 字节就变成字符串节点；长词元与整行值
+  保持相同的节点类型。
+- `truex` 等关键字前缀仍是字符串；完整关键字即使带末尾空白或位于
+  EOF，也保留关键字节点类型。
 - 高亮查询现可捕获顶层及内联 raw 标量；locals 查询为内联对象
   定义作用域和键。
 - 内联对象和数组的高亮现在仅捕获匿名的花括号与方括号 token，

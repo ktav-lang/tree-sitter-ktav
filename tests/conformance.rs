@@ -14,9 +14,9 @@
 //!
 //! * `invalid/**.ktav` — many grammar-level errors (unbalanced
 //!   brackets, empty key, etc.) DO surface as `ERROR` / `MISSING`
-//!   nodes, but some semantic-only invalids (e.g. `DuplicateName`,
-//!   `PathConflict`) parse cleanly at the syntactic level and only
-//!   fail at the validation pass that the reference parser performs.
+//!   nodes, but key conflicts (`DuplicateKey`, `KeyPathConflict`) parse
+//!   cleanly and need semantic validation; `InvalidUtf8` needs raw-byte
+//!   validation before syntax parsing.
 //!   We therefore do NOT assert that the tree-sitter grammar rejects
 //!   every invalid fixture — we only sanity-check that the grammar
 //!   doesn't panic and produces *some* tree. A future enhancement is
@@ -591,14 +591,13 @@ fn conformance_invalid_fixtures_do_not_panic() {
     }
     eprintln!(
         "conformance: {} invalid fixtures parsed; {} surfaced ERROR/MISSING \
-         nodes at the grammar level (the rest are semantic-only invalids)",
+         nodes at the grammar level (the rest need key or raw-byte validation)",
         total, with_grammar_errors
     );
 }
 
-// Categories a context-free grammar cannot see: they need a symbol table
-// (duplicates, path conflicts) or pre-decoding byte validation.
-const SEMANTIC_ONLY_ERRORS: [&str; 3] = ["DuplicateKey", "KeyPathConflict", "InvalidUtf8"];
+// Key conflicts need a symbol table; InvalidUtf8 needs pre-parse byte validation.
+const NON_SYNTAX_ERRORS: [&str; 3] = ["DuplicateKey", "KeyPathConflict", "InvalidUtf8"];
 
 #[test]
 fn conformance_syntactic_invalid_fixtures_surface_errors() {
@@ -614,7 +613,7 @@ fn conformance_syntactic_invalid_fixtures_surface_errors() {
         let expected = oracle["expected_error"]
             .as_str()
             .expect("invalid oracle lacks expected_error");
-        if SEMANTIC_ONLY_ERRORS.contains(&expected) {
+        if NON_SYNTAX_ERRORS.contains(&expected) {
             continue;
         }
         checked += 1;

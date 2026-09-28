@@ -3,9 +3,9 @@
 
 - Conformance suite walks the spec **0.8.0** corpus (was 0.6) with no
   valid-fixture allow-list and checks root kinds against JSON oracles.
-- Every `invalid/` fixture must surface a syntax error unless its
-  expected error is semantic (`DuplicateKey`, `KeyPathConflict`,
-  `InvalidUtf8`), which a context-free grammar cannot detect.
+- Every `invalid/` fixture must surface a syntax error unless it needs
+  key validation (`DuplicateKey`, `KeyPathConflict`) or pre-parse UTF-8
+  byte validation (`InvalidUtf8`).
 - Corpus guard validates manifest, version, and oracle schemas, and
   safely validates raw-byte fixture stems.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
@@ -16,9 +16,9 @@
 
 - Conformance-набор обходит корпус спецификации **0.8.0** (ранее 0.6)
   без исключений valid-фикстур и сверяет вид корня с JSON-оракулами.
-- Каждая фикстура `invalid/` обязана давать синтаксическую ошибку, если
-  ожидаемая ошибка не семантическая (`DuplicateKey`, `KeyPathConflict`,
-  `InvalidUtf8`) — такие контекстно-свободная грамматика обнаружить не может.
+- Каждая фикстура `invalid/` обязана давать синтаксическую ошибку,
+  кроме требующих проверки ключей (`DuplicateKey`, `KeyPathConflict`)
+  или исходных байтов UTF-8 до разбора (`InvalidUtf8`).
 - Защитная проверка корпуса контролирует схемы manifest, версии и
   oracle, а также безопасно проверяет имена raw-byte фикстур.
 - CI: `cargo publish` использует Trusted Publishing (OIDC);
@@ -29,9 +29,9 @@
 
 - 一致性套件现在遍历规范 **0.8.0** 语料（此前为 0.6），不再豁免
   有效样例，并根据 JSON 预期结果检查根类型。
-- 每个 `invalid/` 样例都必须产生语法错误，除非其预期错误属于语义类
-  （`DuplicateKey`、`KeyPathConflict`、`InvalidUtf8`）——上下文无关
-  语法无法检测这类错误。
+- 每个 `invalid/` 样例都必须产生语法错误，除非它需要验证键
+  （`DuplicateKey`、`KeyPathConflict`）或在解析前检查原始 UTF-8
+  字节（`InvalidUtf8`）。
 - 语料保护检查 manifest、版本和 oracle 的结构，并安全校验
   raw-byte fixture 的文件名。
 - CI：`cargo publish` 使用 Trusted Publishing（OIDC）；

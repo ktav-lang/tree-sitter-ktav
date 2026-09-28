@@ -687,9 +687,11 @@ module.exports = grammar({
     // § 5.8.5 (spec.md:1579-1588) makes leading parens ordinary content.
     // The `)` exclusion keeps `()`/`(())` unambiguous with the
     // empty-paren tokens (higher lexical precedence, same length).
+    // `_eol` consumes trailing whitespace, so an exact keyword does not
+    // lose to a longer scalar token while `truex` still remains a scalar.
     _scalar_text: $ => choice(
-      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\{\[\(\r\n][^\r\n]*/,
-      /\([^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n\)][^\r\n]*/,
+      /[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\{\[\(\r\n]([^\r\n]*[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n])?/,
+      /\([^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n\)]([^\r\n]*[^ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\r\n])?/,
     ),
 
     // ---- Number literals ----
@@ -722,12 +724,16 @@ module.exports = grammar({
     ),
 
     // ---- Keywords ----
-    keyword: $ => seq(
-      choice($.kw_null, $.kw_true, $.kw_false),
-      $._eol,
+    // A whole-line token beats top-level scalar text; the shorter literal
+    // handles true EOF without winning over a longer scalar like `truex`.
+    keyword: $ => choice(
+      seq(choice($.kw_null, $.kw_true, $.kw_false), $._eol),
+      alias(token(prec(3, /null[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_null),
+      alias(token(prec(3, /true[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_true),
+      alias(token(prec(3, /false[ \t\x0B\x0C\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*(\r\n|\r|\n)/)), $.kw_false),
     ),
-    kw_null:  $ => token(prec(3, 'null')),
-    kw_true:  $ => token(prec(3, 'true')),
-    kw_false: $ => token(prec(3, 'false')),
+    kw_null:  $ => token('null'),
+    kw_true:  $ => token('true'),
+    kw_false: $ => token('false'),
   },
 });

@@ -20,6 +20,8 @@ the core and the specification (0.7.x was never tagged for this package).
   `::` values stay raw (§ 5.8.5).
 - Exactly one leading byte-order mark is skipped (§ 3.1).
 
+### Fixed
+
 >>>>> lang=ru
 ## [0.8.0] — 2026-09-28
 
@@ -44,6 +46,8 @@ the core and the specification (0.7.x was never tagged for this package).
   (§ 3.7), а значения после `::` остаются raw (§ 5.8.5).
 - Ровно один ведущий байтовый маркер порядка байт (BOM) пропускается (§ 3.1).
 
+### Исправлено
+
 >>>>> lang=zh
 ## [0.8.0] — 2026-09-28
 
@@ -64,4 +68,6 @@ the core and the specification (0.7.x was never tagged for this package).
   （§ 5.2、§ 5.8）。含转义的值一律为字符串（§ 3.7），`::` 之后的值
   保持 raw（§ 5.8.5）。
 - 跳过恰好一个前导的字节顺序标记（BOM）（§ 3.1）。
+
+### 修复
 
