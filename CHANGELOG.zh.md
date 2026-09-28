@@ -73,6 +73,8 @@
   字节（`InvalidUtf8`）。
 - 语料保护检查 manifest、版本和 oracle 的结构，并安全校验
   raw-byte fixture 的文件名。
+- 新增用于开发的浏览器演练场（`npm run playground`），显示高亮、解析错误
+  和语法树，并按预期结果核对 spec 0.8 语料库；它不包含在发布包中。
 - CI：`cargo publish` 使用 Trusted Publishing（OIDC）；
   `npm publish` 优先使用 OIDC，也可回退到 registry 令牌。
 

@@ -49,6 +49,16 @@ npm test                     # Node binding tests (rebuilds the addon)
 Initialize the `spec` submodule (`git submodule update --init --recursive`)
 before `cargo test`; the Rust conformance tests read its pinned corpus.
 
+### Playground
+
+`npm run playground` builds the grammar to WASM and serves a browser
+page at <http://127.0.0.1:8123/>: an editable source, highlighting from
+`queries/highlights.scm` with parse errors marked, and the syntax tree.
+Any spec 0.8 fixture can be opened there and checked against its
+expectation, or the whole corpus run at once. `npm run playground:check`
+runs the same checks headlessly. The page lives in `playground/`; its
+build output goes to the git-ignored `playground/out/`.
+
 ## Language policy
 
 This repo participates in the org-wide three-language policy (EN / RU /

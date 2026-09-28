@@ -46,6 +46,15 @@ npm test                     # 运行 Node 绑定测试（会重新构建 addon�
 运行 `cargo test` 前，请执行 `git submodule update --init --recursive`
 初始化 `spec` 子模块；Rust 规范一致性测试需要其中固定版本的语料库。
 
+### 演练场
+
+`npm run playground` 会把语法构建为 WASM，并在
+<http://127.0.0.1:8123/> 提供一个浏览器页面：可编辑的源码、按
+`queries/highlights.scm` 的高亮（标出解析错误）以及语法树。可以在其中
+打开任意 spec 0.8 样例并与其预期结果核对，或一次运行整个语料库。
+`npm run playground:check` 在无浏览器环境下执行同样的检查。页面位于
+`playground/`，构建产物输出到被 git 忽略的 `playground/out/`。
+
 ## 语言政策
 
 本仓库参与组织级三语政策(EN / RU / ZH)。每份 prose 文档都有三种

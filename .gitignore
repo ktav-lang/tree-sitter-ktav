@@ -32,3 +32,6 @@ tree-sitter-ktav.wasm
 
 # /wrush task worktrees — always created here, in-tree
 /worktrees/
+
+# Playground build output (npm run playground)
+playground/out/

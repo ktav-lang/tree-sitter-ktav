@@ -77,6 +77,9 @@ the core and the specification (0.7.x was never tagged for this package).
   byte validation (`InvalidUtf8`).
 - Corpus guard validates manifest, version, and oracle schemas, and
   safely validates raw-byte fixture stems.
+- A browser playground for development (`npm run playground`) shows
+  highlighting, parse errors and the syntax tree, and checks the spec
+  0.8 corpus against its expectations; it is not part of the packages.
 - CI: `cargo publish` uses Trusted Publishing (OIDC); `npm publish`
   prefers OIDC and can fall back to a registry token.
 
