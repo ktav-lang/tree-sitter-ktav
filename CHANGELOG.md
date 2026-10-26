@@ -13,6 +13,19 @@ For the format specification's own history, see the
 
 ## Unreleased
 
+### 0.8.1
+
+- Align crate, npm and Tree-sitter metadata versions on 0.8.1 and pin
+  the spec submodule to `v0.8.1`. The corpus guard tracks all 340 fixtures
+  in all five categories (228/90/5/4/13), without widening syntax exemptions.
+- Add Node binding regressions for lowercase-only numeric prefixes in
+  whole-line, root-array and inline values, with LF, CRLF, CR and no final
+  newline. `0x1A` is numeric; `0X1A`, `0O17` and `0B101` are Strings.
+- Pin syntax errors for explicit roots left open at EOF, with closed-root
+  controls. No grammar change or parser regeneration is needed for these
+  0.8.1 errata; semantic and raw UTF-8 validation remain outside Tree-sitter.
+- Update installation and status documentation in English, Russian and Chinese.
+
 ## [0.8.0] — 2026-09-28
 
 Grammar tracks Ktav spec **0.8.0** (spec submodule pinned to `v0.8.0`)

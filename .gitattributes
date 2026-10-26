@@ -4,6 +4,9 @@
 # `git status` from Windows clients.
 * text=auto eol=lf
 
+# Polydoc сохраняет пустую строку после абзаца source unit.
+root-docs/**/body-*.md whitespace=-blank-at-eof
+
 # Generated parser code — committed per tree-sitter convention. Mark
 # as generated so GitHub diffs collapse it by default.
 src/parser.c linguist-generated=true

@@ -1,7 +1,7 @@
 >>>>> lang=en
 ## Status
 
-`0.8.0` — Tree-sitter grammar targeting the syntax in [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+`0.8.1` — Tree-sitter grammar targeting the syntax in [Ktav 0.8.1](https://github.com/ktav-lang/spec/blob/v0.8.1/versions/0.8/spec.md).
 The grammar parses every pinned spec 0.8 valid fixture without error and
 checks each Object/Array root against its JSON oracle. Every invalid
 fixture yields a syntax error except those needing key validation
@@ -13,7 +13,7 @@ reference Rust parser.
 >>>>> lang=ru
 ## Статус
 
-`0.8.0` — Tree-sitter-грамматика синтаксиса [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+`0.8.1` — Tree-sitter-грамматика синтаксиса [Ktav 0.8.1](https://github.com/ktav-lang/spec/blob/v0.8.1/versions/0.8/spec.md).
 Грамматика разбирает все закреплённые валидные фикстуры spec 0.8 без
 ошибок и сверяет корневой Object/Array с JSON-оракулом. Каждая
 невалидная фикстура даёт синтаксическую ошибку, кроме случаев, где
@@ -25,7 +25,7 @@ reference Rust parser.
 >>>>> lang=zh
 ## 状态
 
-`0.8.0` — 面向 [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md) 语法的 Tree-sitter 语法包。
+`0.8.1` — 面向 [Ktav 0.8.1](https://github.com/ktav-lang/spec/blob/v0.8.1/versions/0.8/spec.md) 语法的 Tree-sitter 语法包。
 语法可无错误地解析所有固定的 spec 0.8 有效样例，并将每个根
 Object/Array 与 JSON 预期结果核对。除需验证键的错误（`DuplicateKey`、
 `KeyPathConflict`）或解析前检查原始 UTF-8 字节的错误（`InvalidUtf8`）外，

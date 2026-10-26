@@ -6,7 +6,7 @@
 ```toml
 [dependencies]
 tree-sitter         = "0.25"
-tree-sitter-ktav    = "0.8.0"
+tree-sitter-ktav    = "0.8.1"
 ```
 
 ```rust
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```toml
 [dependencies]
 tree-sitter         = "0.25"
-tree-sitter-ktav    = "0.8.0"
+tree-sitter-ktav    = "0.8.1"
 ```
 
 ```rust
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```toml
 [dependencies]
 tree-sitter         = "0.25"
-tree-sitter-ktav    = "0.8.0"
+tree-sitter-ktav    = "0.8.1"
 ```
 
 ```rust
