@@ -13,7 +13,7 @@ For the format specification's own history, see the
 
 ## Unreleased
 
-### 0.8.1
+## [0.8.1] — 2026-10-26
 
 - Align crate, npm and Tree-sitter metadata versions on 0.8.1 and pin
   the spec submodule to `v0.8.1`. The corpus guard tracks all 340 fixtures

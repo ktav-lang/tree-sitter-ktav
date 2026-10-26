@@ -1,5 +1,5 @@
 >>>>> lang=en
-### 0.8.1
+## [0.8.1] — 2026-10-26
 
 - Align crate, npm and Tree-sitter metadata versions on 0.8.1 and pin
   the spec submodule to `v0.8.1`. The corpus guard tracks all 340 fixtures
@@ -14,7 +14,7 @@
 - Update installation and status documentation in English, Russian and Chinese.
 
 >>>>> lang=ru
-### 0.8.1
+## [0.8.1] — 2026-10-26
 
 - Версии crate, npm и метаданных Tree-sitter синхронизированы на 0.8.1;
   подмодуль spec закреплён на `v0.8.1`. Corpus-guard учитывает все 340
@@ -29,7 +29,7 @@
 - Установка и статус описаны на EN/RU/ZH.
 
 >>>>> lang=zh
-### 0.8.1
+## [0.8.1] — 2026-10-26
 
 - crate、npm 和 Tree-sitter 元数据版本同步至 0.8.1，spec 子模块固定
   在 `v0.8.1`。语料检查覆盖五类全部 340 个样例（228/90/5/4/13），
