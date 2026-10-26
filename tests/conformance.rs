@@ -33,8 +33,8 @@ fn spec_tests_dir() -> PathBuf {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("spec/versions/0.8/tests");
     let spec = fs::read_to_string(root.join("../spec.md")).expect("pinned spec document missing");
     assert!(
-        spec.lines().any(|line| line.trim() == "**Version:** 0.8.0"),
-        "spec/versions/0.8 is not the Ktav 0.8.0 specification"
+        spec.lines().any(|line| line.trim() == "**Version:** 0.8.1"),
+        "spec/versions/0.8 is not the Ktav 0.8.1 specification"
     );
     let manifest =
         fs::read(root.join("manifest.json")).expect("pinned spec corpus manifest missing");
@@ -60,8 +60,8 @@ fn spec_tests_dir() -> PathBuf {
     );
 
     let expected = [
-        ("valid", 223_u64),
-        ("invalid", 74),
+        ("valid", 228_u64),
+        ("invalid", 90),
         ("unrepresentable", 5),
         ("parseable-unrepresentable", 4),
         ("strict-lossy", 13),

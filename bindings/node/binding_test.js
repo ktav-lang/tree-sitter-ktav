@@ -29,6 +29,57 @@ test("0.8 leading-zero values use string nodes", () => {
   );
 });
 
+test("0.8.1 base prefixes are lowercase-only in every value position", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const [value, numeric] of [
+    ["0X1A", false], ["0O17", false], ["0B101", false],
+    ["-0XFF", false], ["+0B1", false], ["0X", false],
+    ["0x1A", true], ["0o17", true], ["0b101", true],
+    ["-0xFF", true], ["+0b1", true],
+  ]) {
+    for (const suffix of ["\n", "\r\n", "\r", ""]) {
+      for (const source of [
+        `value: ${value}${suffix}`,
+        `${value}${suffix}`,
+        `value: [${value}]${suffix}`,
+        `value: {nested: ${value}}${suffix}`,
+      ]) {
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, false, JSON.stringify(source));
+        const integers = tree.rootNode.descendantsOfType("integer");
+        assert.equal(integers.length, numeric ? 1 : 0, JSON.stringify(source));
+        if (numeric) {
+          assert.equal(integers[0].text.trim(), value);
+        } else {
+          const strings = tree.rootNode.descendantsOfType([
+            "scalar", "top_scalar", "inline_scalar",
+          ]);
+          assert.ok(strings.some((node) => node.text.trim() === value), JSON.stringify(source));
+        }
+      }
+    }
+  }
+});
+
+test("0.8.1 explicit roots cannot close implicitly at EOF", () => {
+  const parser = new Parser();
+  parser.setLanguage(grammar);
+  for (const eol of ["\n", "\r\n", "\r"]) {
+    for (const [open, body, close] of [
+      ["{", "key: value", "}"],
+      ["[", "value", "]"],
+    ]) {
+      for (const source of [open, open + eol, open + eol + body + eol]) {
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, true, JSON.stringify(source));
+      }
+      const source = open + eol + body + eol + close;
+      assert.equal(parser.parse(source).rootNode.hasError, false, JSON.stringify(source));
+    }
+  }
+});
+
 test("inline numeric nodes do not depend on token length", () => {
   const parser = new Parser();
   parser.setLanguage(grammar);

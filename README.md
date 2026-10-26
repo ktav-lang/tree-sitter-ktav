@@ -42,7 +42,7 @@ this crate / npm package is the one for Ktav.
 ```toml
 [dependencies]
 tree-sitter         = "0.25"
-tree-sitter-ktav    = "0.8.0"
+tree-sitter-ktav    = "0.8.1"
 ```
 
 ```rust
@@ -187,7 +187,7 @@ so consumers do not need the CLI to build.
 
 ## Status
 
-`0.8.0` — Tree-sitter grammar targeting the syntax in [Ktav 0.8.0](https://github.com/ktav-lang/spec/blob/main/versions/0.8/spec.md).
+`0.8.1` — Tree-sitter grammar targeting the syntax in [Ktav 0.8.1](https://github.com/ktav-lang/spec/blob/v0.8.1/versions/0.8/spec.md).
 The grammar parses every pinned spec 0.8 valid fixture without error and
 checks each Object/Array root against its JSON oracle. Every invalid
 fixture yields a syntax error except those needing key validation
